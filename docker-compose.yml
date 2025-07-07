@@ -1,0 +1,89 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: timescale/timescaledb:latest-pg15
+    environment:
+      POSTGRES_DB: ethoscope
+      POSTGRES_USER: ethoscope
+      POSTGRES_PASSWORD: ethoscope_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/setup_timescale.sql:/docker-entrypoint-initdb.d/10-setup-timescale.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ethoscope"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Production backend (default)
+  backend:
+    build:
+      context: .
+      dockerfile: docker/backend.Dockerfile
+    environment:
+      DATABASE_URL: postgresql://ethoscope:ethoscope_password@postgres:5432/ethoscope
+      REDIS_URL: redis://redis:6379
+      ALCHEMY_API_KEY: ${ALCHEMY_API_KEY}
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app/backend
+
+  # Development container (optional)
+  backend-dev:
+    build:
+      context: .
+      dockerfile: docker/dev.Dockerfile
+    environment:
+      DATABASE_URL: postgresql://ethoscope:ethoscope_password@postgres:5432/ethoscope
+      REDIS_URL: redis://redis:6379
+      ALCHEMY_API_KEY: ${ALCHEMY_API_KEY}
+      PYTHONPATH: /app
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app/backend
+      - ./tests:/app/tests
+      - ./scripts:/app/scripts
+    profiles: ["dev"]  # Only runs with --profile dev
+
+  # pgAdmin for database inspection
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@ethoscope.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    profiles: ["tools"]  # Only runs with --profile tools
+
+volumes:
+  postgres_data:
+  redis_data:
