@@ -208,3 +208,5 @@ __marimo__/
 
 project_scope_README.md
 implementation_plans/
+scripts/debug_etl.py
+.mcp.json
