@@ -16,7 +16,6 @@ class BaseCollector(ABC):
     @abstractmethod
     async def collect(self) -> List[Dict[str, Any]]:
         """Collect data from source"""
-        pass
 
     async def run_collection(self, interval: int = 60):
         """Run collection continuously at specified interval"""

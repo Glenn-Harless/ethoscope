@@ -139,17 +139,21 @@ class AlchemyCollector(BaseCollector):
                     "metric_type": "mempool",
                     "timestamp": datetime.utcnow(),
                     "pending_count": len(pending_block["transactions"]),
-                    "avg_gas_price_gwei": float(
-                        Web3.from_wei(sum(gas_prices) / len(gas_prices), "gwei")
-                    )
-                    if gas_prices
-                    else 0,
-                    "min_gas_price_gwei": float(Web3.from_wei(min(gas_prices), "gwei"))
-                    if gas_prices
-                    else 0,
-                    "max_gas_price_gwei": float(Web3.from_wei(max(gas_prices), "gwei"))
-                    if gas_prices
-                    else 0,
+                    "avg_gas_price_gwei": (
+                        float(Web3.from_wei(sum(gas_prices) / len(gas_prices), "gwei"))
+                        if gas_prices
+                        else 0
+                    ),
+                    "min_gas_price_gwei": (
+                        float(Web3.from_wei(min(gas_prices), "gwei"))
+                        if gas_prices
+                        else 0
+                    ),
+                    "max_gas_price_gwei": (
+                        float(Web3.from_wei(max(gas_prices), "gwei"))
+                        if gas_prices
+                        else 0
+                    ),
                 }
 
                 # Cache mempool data

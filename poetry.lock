@@ -350,6 +350,22 @@ tests = ["cloudpickle", "hypothesis", "mypy (>=1.11.1)", "pympler", "pytest (>=4
 tests-mypy = ["mypy (>=1.11.1)", "pytest-mypy-plugins"]
 
 [[package]]
+name = "autoflake"
+version = "2.3.1"
+description = "Removes unused imports and unused variables"
+optional = false
+python-versions = ">=3.8"
+groups = ["dev"]
+markers = "python_version == \"3.11\" or python_version >= \"3.12\""
+files = [
+    {file = "autoflake-2.3.1-py3-none-any.whl", hash = "sha256:3ae7495db9084b7b32818b4140e6dc4fc280b712fb414f5b8fe57b0a8e85a840"},
+    {file = "autoflake-2.3.1.tar.gz", hash = "sha256:c98b75dc5b0a86459c4f01a1d32ac7eb4338ec4317a4469515ff1e687ecd909e"},
+]
+
+[package.dependencies]
+pyflakes = ">=3.0.0"
+
+[[package]]
 name = "babel"
 version = "2.17.0"
 description = "Internationalization utilities"
@@ -5910,4 +5926,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.11"
-content-hash = "16194e0fd5453e8a61e603762594793a997882073db076782b665e19d4ab197a"
+content-hash = "a72667167c67d24b2ea0ad02ee9477d9c8b9a827bb5d0e4cf29ba85a2d3d76ae"
