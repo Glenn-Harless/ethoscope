@@ -20,6 +20,11 @@ from backend.models.metrics import (  # noqa: E402, F401
     MempoolMetric,
     NetworkHealthScore,
 )
+from backend.models.mev_metrics import (  # noqa: E402, F401
+    MEVBlockAnalysis,
+    MEVBoostStats,
+    MEVMetric,
+)
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

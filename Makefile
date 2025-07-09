@@ -186,3 +186,30 @@ health:
 	@docker-compose exec -T redis redis-cli ping >/dev/null 2>&1 && echo "$(GREEN)✓ Healthy$(NC)" || echo "$(RED)✗ Not running$(NC)"
 	@echo -n "Alchemy API: "
 	@poetry run python -c "from backend.etl.collectors.alchemy_collector import AlchemyCollector; AlchemyCollector()" >/dev/null 2>&1 && echo "$(GREEN)✓ Connected$(NC)" || echo "$(RED)✗ Connection failed$(NC)"
+
+# Phase 2 specific commands
+test-mev:
+	@echo "$(BLUE)Testing MEV detection...$(NC)"
+	poetry run python scripts/test_collectors.py
+
+run-api:
+	@echo "$(BLUE)Starting API server...$(NC)"
+	poetry run python scripts/run_api.py
+
+api-docs:
+	@echo "$(BLUE)API documentation available at:$(NC)"
+	@echo "http://localhost:8000/docs"
+
+test-websocket:
+	@echo "$(BLUE)Testing WebSocket connection...$(NC)"
+	poetry run python scripts/test_websocket.py
+
+phase2-migrate:
+	@echo "$(BLUE)Running Phase 2 migrations...$(NC)"
+	poetry run alembic revision --autogenerate -m "Phase 2 tables"
+	poetry run alembic upgrade head
+	docker-compose exec postgres psql -U ethoscope -d ethoscope -f /scripts/setup_phase2_timescale.sql
+
+health-check-api:
+	@echo "$(BLUE)API Health Check:$(NC)"
+	@curl -s http://localhost:8000/api/v1/health/score | jq '.'

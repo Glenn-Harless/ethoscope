@@ -1,3 +1,1167 @@
+# Table of Contents
+- .pre-commit-config.yaml
+- alembic.ini
+- Makefile
+- pyproject.toml
+- README.md
+- .dockerignore
+- .gitignore
+- docker-compose.yml
+- .env.example
+- poetry.lock
+- docker/backend.Dockerfile
+- docker/dev.Dockerfile
+- .claude/settings.local.json
+- backend/__init__.py
+- scripts/setup_timescale.sql
+- scripts/run_etl.py
+- scripts/test_integration.py
+- scripts/clean_code.py
+- alembic/script.py.mako
+- alembic/env.py
+- alembic/README
+- tests/backend/test_collectors.py
+- backend/middleware/__init__.py
+- backend/etl/config.py
+- backend/etl/__init__.py
+- backend/etl/pipeline.py
+- backend/utils/__init__.py
+- backend/models/metrics.py
+- backend/models/database.py
+- backend/models/__init__.py
+- backend/ml/__init__.py
+- backend/api/__init__.py
+- backend/services/__init__.py
+- backend/etl/collectors/alchemy_collector.py
+- backend/etl/collectors/__init__.py
+- backend/etl/collectors/base.py
+- backend/etl/processors/__init__.py
+- backend/etl/processors/metric_processor.py
+- backend/etl/loaders/__init__.py
+- backend/etl/loaders/database_loader.py
+- alembic/versions/15715f86a411_initial_schema.py
+
+## File: .pre-commit-config.yaml
+
+- Extension: .yaml
+- Language: yaml
+- Size: 807 bytes
+- Created: 2025-07-08 13:19:54
+- Modified: 2025-07-07 15:38:13
+
+### Code
+
+```yaml
+repos:
+    - repo: https://github.com/pre-commit/pre-commit-hooks
+      rev: v4.4.0
+      hooks:
+        - id: trailing-whitespace
+        - id: end-of-file-fixer
+        - id: check-yaml
+        - id: check-added-large-files
+          args: ['--maxkb=1000']  # Allow files up to 1MB
+        - id: check-merge-conflict
+        - id: check-toml
+        - id: debug-statements
+
+    - repo: https://github.com/psf/black
+      rev: 23.7.0
+      hooks:
+        - id: black
+          language_version: python3.11
+
+    - repo: https://github.com/PyCQA/flake8
+      rev: 6.1.0
+      hooks:
+        - id: flake8
+          args: ['--max-line-length=88', '--extend-ignore=E203,W503']
+
+    - repo: https://github.com/PyCQA/isort
+      rev: 5.12.0
+      hooks:
+        - id: isort
+          args: ['--profile', 'black']
+
+```
+
+## File: alembic.ini
+
+- Extension: .ini
+- Language: ini
+- Size: 4713 bytes
+- Created: 2025-07-08 13:19:54
+- Modified: 2025-07-07 21:09:27
+
+### Code
+
+```ini
+# A generic, single database configuration.
+
+[alembic]
+# path to migration scripts.
+# this is typically a path given in POSIX (e.g. forward slashes)
+# format, relative to the token %(here)s which refers to the location of this
+# ini file
+script_location = %(here)s/alembic
+
+# template used to generate migration file names; The default value is %%(rev)s_%%(slug)s
+# Uncomment the line below if you want the files to be prepended with date and time
+# see https://alembic.sqlalchemy.org/en/latest/tutorial.html#editing-the-ini-file
+# for all available tokens
+# file_template = %%(year)d_%%(month).2d_%%(day).2d_%%(hour).2d%%(minute).2d-%%(rev)s_%%(slug)s
+
+# sys.path path, will be prepended to sys.path if present.
+# defaults to the current working directory.  for multiple paths, the path separator
+# is defined by "path_separator" below.
+prepend_sys_path = .
+
+
+# timezone to use when rendering the date within the migration file
+# as well as the filename.
+# If specified, requires the python>=3.9 or backports.zoneinfo library and tzdata library.
+# Any required deps can installed by adding `alembic[tz]` to the pip requirements
+# string value is passed to ZoneInfo()
+# leave blank for localtime
+# timezone =
+
+# max length of characters to apply to the "slug" field
+# truncate_slug_length = 40
+
+# set to 'true' to run the environment during
+# the 'revision' command, regardless of autogenerate
+# revision_environment = false
+
+# set to 'true' to allow .pyc and .pyo files without
+# a source .py file to be detected as revisions in the
+# versions/ directory
+# sourceless = false
+
+# version location specification; This defaults
+# to <script_location>/versions.  When using multiple version
+# directories, initial revisions must be specified with --version-path.
+# The path separator used here should be the separator specified by "path_separator"
+# below.
+# version_locations = %(here)s/bar:%(here)s/bat:%(here)s/alembic/versions
+
+# path_separator; This indicates what character is used to split lists of file
+# paths, including version_locations and prepend_sys_path within configparser
+# files such as alembic.ini.
+# The default rendered in new alembic.ini files is "os", which uses os.pathsep
+# to provide os-dependent path splitting.
+#
+# Note that in order to support legacy alembic.ini files, this default does NOT
+# take place if path_separator is not present in alembic.ini.  If this
+# option is omitted entirely, fallback logic is as follows:
+#
+# 1. Parsing of the version_locations option falls back to using the legacy
+#    "version_path_separator" key, which if absent then falls back to the legacy
+#    behavior of splitting on spaces and/or commas.
+# 2. Parsing of the prepend_sys_path option falls back to the legacy
+#    behavior of splitting on spaces, commas, or colons.
+#
+# Valid values for path_separator are:
+#
+# path_separator = :
+# path_separator = ;
+# path_separator = space
+# path_separator = newline
+#
+# Use os.pathsep. Default configuration used for new projects.
+path_separator = os
+
+# set to 'true' to search source files recursively
+# in each "version_locations" directory
+# new in Alembic version 1.10
+# recursive_version_locations = false
+
+# the output encoding used when revision files
+# are written from script.py.mako
+# output_encoding = utf-8
+
+# database URL.  This is consumed by the user-maintained env.py script only.
+# other means of configuring database URLs may be customized within the env.py
+# file.
+sqlalchemy.url = postgresql://ethoscope:ethoscope_password@localhost:5432/ethoscope
+
+
+[post_write_hooks]
+# post_write_hooks defines scripts or Python functions that are run
+# on newly generated revision scripts.  See the documentation for further
+# detail and examples
+
+# format using "black" - use the console_scripts runner, against the "black" entrypoint
+# hooks = black
+# black.type = console_scripts
+# black.entrypoint = black
+# black.options = -l 79 REVISION_SCRIPT_FILENAME
+
+# lint with attempts to fix using "ruff" - use the exec runner, execute a binary
+# hooks = ruff
+# ruff.type = exec
+# ruff.executable = %(here)s/.venv/bin/ruff
+# ruff.options = check --fix REVISION_SCRIPT_FILENAME
+
+# Logging configuration.  This is also consumed by the user-maintained
+# env.py script only.
+[loggers]
+keys = root,sqlalchemy,alembic
+
+[handlers]
+keys = console
+
+[formatters]
+keys = generic
+
+[logger_root]
+level = WARNING
+handlers = console
+qualname =
+
+[logger_sqlalchemy]
+level = WARNING
+handlers =
+qualname = sqlalchemy.engine
+
+[logger_alembic]
+level = INFO
+handlers =
+qualname = alembic
+
+[handler_console]
+class = StreamHandler
+args = (sys.stderr,)
+level = NOTSET
+formatter = generic
+
+[formatter_generic]
+format = %(levelname)-5.5s [%(name)s] %(message)s
+datefmt = %H:%M:%S
+
+```
+
+## File: Makefile
+
+- Extension:
+- Language: unknown
+- Size: 6252 bytes
+- Created: 2025-07-08 13:19:54
+- Modified: 2025-07-08 13:08:38
+
+### Code
+
+```unknown
+.PHONY: help setup dev test clean lint format migrate logs shell-db shell-redis check-env clean-code
+
+# Default target
+default: help
+
+# Colors for output
+BLUE := \033[0;34m
+GREEN := \033[0;32m
+YELLOW := \033[0;33m
+RED := \033[0;31m
+NC := \033[0m # No Color
+
+help:
+	@echo "$(BLUE)Ethereum Network Health Monitor - Available Commands$(NC)"
+	@echo ""
+	@echo "$(GREEN)Setup & Development:$(NC)"
+	@echo "  make setup        - Initial project setup"
+	@echo "  make dev          - Start development environment (local Python + Docker services)"
+	@echo "  make dev-docker   - Run everything in Docker containers"
+	@echo "  make dev-tools    - Start development with pgAdmin"
+	@echo ""
+	@echo "$(GREEN)Code Quality:$(NC)"
+	@echo "  make lint         - Run code quality checks"
+	@echo "  make format       - Auto-format code"
+	@echo "  make clean-code   - Clean and fix code to pass pre-commit hooks"
+	@echo "  make test         - Run all tests"
+	@echo "  make test-cov     - Run tests with coverage report"
+	@echo ""
+	@echo "$(GREEN)Database:$(NC)"
+	@echo "  make migrate      - Run database migrations"
+	@echo "  make migrate-new  - Create new migration (usage: make migrate-new msg='your message')"
+	@echo "  make shell-db     - Open PostgreSQL shell"
+	@echo "  make shell-redis  - Open Redis CLI"
+	@echo ""
+	@echo "$(GREEN)Monitoring:$(NC)"
+	@echo "  make logs         - Show all container logs"
+	@echo "  make logs-etl     - Show ETL pipeline logs"
+	@echo "  make status       - Check service status"
+	@echo ""
+	@echo "$(GREEN)Cleanup:$(NC)"
+	@echo "  make clean        - Stop and remove all containers/volumes"
+	@echo "  make clean-cache  - Clear Python cache files"
+
+# Check if .env exists
+check-env:
+	@if [ ! -f .env ]; then \
+		echo "$(RED)Error: .env file not found!$(NC)"; \
+		echo "$(YELLOW)Creating .env from .env.example...$(NC)"; \
+		cp .env.example .env; \
+		echo "$(GREEN)✓ Created .env file. Please update it with your API keys.$(NC)"; \
+	fi
+
+setup: check-env
+	@echo "$(BLUE)Setting up Ethoscope...$(NC)"
+	poetry install
+	@echo "$(GREEN)✓ Poetry dependencies installed$(NC)"
+	docker-compose up -d postgres redis
+	@echo "$(YELLOW)Waiting for PostgreSQL to be ready...$(NC)"
+	@sleep 5
+	poetry run alembic upgrade head
+	@echo "$(GREEN)✓ Database migrations complete$(NC)"
+	@echo "$(YELLOW)Setting up pre-commit hooks...$(NC)"
+	poetry run pre-commit install
+	@echo "$(GREEN)✓ Pre-commit hooks installed$(NC)"
+	@echo ""
+	@echo "$(GREEN)✅ Setup complete! Run 'make dev' to start developing$(NC)"
+
+dev: check-env
+	@echo "$(BLUE)Starting development environment...$(NC)"
+	docker-compose up -d postgres redis
+	@echo "$(YELLOW)Waiting for services...$(NC)"
+	@sleep 3
+	@echo "$(GREEN)✓ Services started$(NC)"
+	poetry run python scripts/run_etl.py
+
+dev-docker: check-env
+	@echo "$(BLUE)Starting full Docker development environment...$(NC)"
+	docker-compose --profile dev up
+
+dev-tools: check-env
+	@echo "$(BLUE)Starting development with tools...$(NC)"
+	docker-compose --profile tools up -d
+	@echo "$(GREEN)✓ pgAdmin available at http://localhost:5050$(NC)"
+	@echo "  Email: admin@ethoscope.com"
+	@echo "  Password: admin"
+
+test:
+	@echo "$(BLUE)Running tests...$(NC)"
+	docker-compose up -d postgres redis
+	@sleep 3
+	poetry run pytest tests/ -v
+
+test-cov:
+	@echo "$(BLUE)Running tests with coverage...$(NC)"
+	docker-compose up -d postgres redis
+	@sleep 3
+	poetry run pytest tests/ -v --cov=backend --cov-report=html --cov-report=term
+
+lint:
+	@echo "$(BLUE)Running linters...$(NC)"
+	poetry run flake8 backend/
+	poetry run mypy backend/
+	poetry run black --check backend/
+	@echo "$(GREEN)✓ All checks passed$(NC)"
+
+format:
+	@echo "$(BLUE)Formatting code...$(NC)"
+	poetry run black backend/
+	poetry run isort backend/
+	@echo "$(GREEN)✓ Code formatted$(NC)"
+
+clean-code:
+	@echo "$(BLUE)Cleaning code to pass pre-commit hooks...$(NC)"
+	@python scripts/clean_code.py
+
+migrate:
+	@echo "$(BLUE)Running database migrations...$(NC)"
+	poetry run alembic upgrade head
+	@echo "$(GREEN)✓ Migrations complete$(NC)"
+
+migrate-new:
+	@if [ -z "$(msg)" ]; then \
+		echo "$(RED)Error: Please provide a migration message$(NC)"; \
+		echo "Usage: make migrate-new msg='your migration message'"; \
+		exit 1; \
+	fi
+	poetry run alembic revision --autogenerate -m "$(msg)"
+
+# Service management
+status:
+	@echo "$(BLUE)Service Status:$(NC)"
+	@docker-compose ps
+
+logs:
+	docker-compose logs -f --tail=100
+
+logs-etl:
+	@echo "$(BLUE)ETL Pipeline Logs:$(NC)"
+	poetry run python scripts/run_etl.py 2>&1 | grep -E "(ETL|Pipeline|Collected|Processed|Loaded)"
+
+# Database utilities
+shell-db:
+	@echo "$(BLUE)Connecting to PostgreSQL...$(NC)"
+	docker-compose exec postgres psql -U ethoscope -d ethoscope
+
+shell-redis:
+	@echo "$(BLUE)Connecting to Redis...$(NC)"
+	docker-compose exec redis redis-cli
+
+db-stats:
+	@echo "$(BLUE)Database Statistics:$(NC)"
+	@docker-compose exec postgres psql -U ethoscope -d ethoscope -c \
+		"SELECT 'gas_metrics' as table_name, COUNT(*) as row_count FROM gas_metrics \
+		UNION ALL \
+		SELECT 'block_metrics', COUNT(*) FROM block_metrics \
+		UNION ALL \
+		SELECT 'mempool_metrics', COUNT(*) FROM mempool_metrics;"
+
+# Cleanup
+clean:
+	@echo "$(RED)Cleaning up all containers and volumes...$(NC)"
+	docker-compose down -v
+	@echo "$(GREEN)✓ Cleanup complete$(NC)"
+
+clean-cache:
+	@echo "$(BLUE)Cleaning Python cache files...$(NC)"
+	rm -rf .pytest_cache
+	find . -type d -name "__pycache__" -exec rm -rf {} +
+	find . -type f -name "*.pyc" -delete
+	@echo "$(GREEN)✓ Cache cleaned$(NC)"
+
+# Development shortcuts
+shell:
+	poetry run ipython
+
+notebook:
+	@echo "$(BLUE)Starting Jupyter notebook...$(NC)"
+	poetry run jupyter notebook
+
+# Quick health check
+health:
+	@echo "$(BLUE)Health Check:$(NC)"
+	@echo -n "PostgreSQL: "
+	@docker-compose exec -T postgres pg_isready -U ethoscope >/dev/null 2>&1 && echo "$(GREEN)✓ Healthy$(NC)" || echo "$(RED)✗ Not running$(NC)"
+	@echo -n "Redis: "
+	@docker-compose exec -T redis redis-cli ping >/dev/null 2>&1 && echo "$(GREEN)✓ Healthy$(NC)" || echo "$(RED)✗ Not running$(NC)"
+	@echo -n "Alchemy API: "
+	@poetry run python -c "from backend.etl.collectors.alchemy_collector import AlchemyCollector; AlchemyCollector()" >/dev/null 2>&1 && echo "$(GREEN)✓ Connected$(NC)" || echo "$(RED)✗ Connection failed$(NC)"
+
+```
+
+## File: pyproject.toml
+
+- Extension: .toml
+- Language: toml
+- Size: 1445 bytes
+- Created: 2025-07-08 13:44:50
+- Modified: 2025-07-08 13:44:50
+
+### Code
+
+```toml
+[tool.poetry]
+name = "ethoscope"
+version = "0.1.0"
+description = "Ethereum Network Health Monitor"
+authors = ["Glenn Harless"]
+readme = "README.md"
+packages = [{include = "backend"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.116.0"
+uvicorn = {extras = ["standard"], version = "^0.35.0"}
+web3 = "^7.12.0"
+psycopg2-binary = "^2.9.10"
+sqlalchemy = "^2.0.41"
+alembic = "^1.16.2"
+pandas = "^2.3.1"
+numpy = "^2.3.1"
+redis = "^6.2.0"
+python-dotenv = "^1.1.1"
+httpx = "^0.28.1"
+requests = "^2.32.4"
+pydantic = "^2.11.7"
+pydantic-settings = "^2.10.1"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.4.1"
+pytest-asyncio = "^1.0.0"
+pytest-cov = "^6.2.1"
+black = "^25.1.0"
+flake8 = "^7.3.0"
+mypy = "^1.16.1"
+isort = "^6.0.1"
+ipython = "^9.4.0"
+pre-commit = "^4.2.0"
+autoflake = "^2.3.1"
+
+[tool.poetry.group.notebook]
+optional = true
+
+[tool.poetry.group.notebook.dependencies]
+jupyter = "^1.1.1"
+matplotlib = "^3.10.3"
+seaborn = "^0.13.2"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 88
+target-version = ['py311']
+
+[tool.isort]
+profile = "black"
+line_length = 88
+
+[tool.mypy]
+plugins = ["pydantic.mypy"]
+follow_imports = "silent"
+warn_redundant_casts = true
+warn_unused_ignores = true
+disallow_any_generics = true
+check_untyped_defs = true
+no_implicit_reexport = true
+
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
+warn_required_dynamic_aliases = true
+
+```
+
+## File: README.md
+
+- Extension: .md
+- Language: markdown
+- Size: 4804 bytes
+- Created: 2025-07-08 13:19:54
+- Modified: 2025-07-08 13:08:38
+
+### Code
+
+```markdown
+# Ethoscope - Ethereum Network Health Monitor
+
+Ethoscope is a comprehensive monitoring and analytics platform for the Ethereum blockchain, providing real-time insights into network health, gas prices, MEV activity, and L2 migration patterns.
+
+## Features
+
+- **Real-time Network Monitoring**: Track gas prices, block times, and mempool congestion
+- **MEV Impact Analysis**: Monitor MEV-Boost adoption and its effects on the network
+- **L2 Migration Tracking**: Analyze the movement of activity to Layer 2 solutions
+- **Time-Series Analytics**: Powered by TimescaleDB for efficient historical data analysis
+- **Caching Layer**: Redis-based caching for improved performance
+
+## Prerequisites
+
+- Python 3.11+
+- Docker and Docker Compose
+- PostgreSQL with TimescaleDB extension
+- Alchemy API key (free tier is sufficient)
+
+## Quick Start
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/yourusername/ethoscope.git
+cd ethoscope
+```
+
+### 2. Install Poetry
+
+```bash
+curl -sSL https://install.python-poetry.org | python3 -
+```
+
+### 3. Install Dependencies
+
+```bash
+poetry install
+```
+
+### 4. Configure Environment
+
+```bash
+cp .env.example .env
+# Edit .env and add your Alchemy API key
+```
+
+### 5. Start Services
+
+```bash
+# Start PostgreSQL and Redis
+docker-compose up -d postgres redis
+
+# Wait for services to be healthy
+docker-compose ps
+
+# Run database migrations
+poetry run alembic upgrade head
+
+# Set up TimescaleDB extensions
+docker-compose exec postgres psql -U ethoscope -d ethoscope -f /docker-entrypoint-initdb.d/10-setup-timescale.sql
+```
+
+### 6. Run the ETL Pipeline
+
+```bash
+# Test the connection first
+poetry run python scripts/test_integration.py
+
+# Run the ETL pipeline
+poetry run python scripts/run_etl.py
+```
+
+## Development
+
+### Running with Docker (Development Mode)
+
+```bash
+# Start all services including development container
+docker-compose --profile dev up
+
+# Or use the Makefile
+make dev
+```
+
+### Running Tests
+
+```bash
+# Run all tests
+poetry run pytest
+
+# Run with coverage
+poetry run pytest --cov=backend
+
+# Run specific test file
+poetry run pytest tests/backend/test_collectors.py
+```
+
+### Code Quality
+
+```bash
+# Run pre-commit hooks
+poetry run pre-commit run --all-files
+
+# Or use the Makefile
+make lint
+```
+
+### Useful Make Commands
+
+```bash
+make help          # Show all available commands
+make dev           # Start development environment
+make test          # Run tests
+make lint          # Run linters
+make migrate       # Run database migrations
+make logs          # View logs
+make clean         # Clean up containers and volumes
+```
+
+## Project Structure
+
+```
+ethoscope/
+├── backend/
+│   ├── api/           # FastAPI endpoints
+│   ├── etl/           # ETL pipeline components
+│   │   ├── collectors/    # Data collection from APIs
+│   │   ├── processors/    # Data transformation
+│   │   └── loaders/       # Data persistence
+│   ├── models/        # Database models
+│   ├── services/      # Business logic
+│   └── utils/         # Utility functions
+├── frontend/          # Frontend application (Phase 3)
+├── docker/            # Docker configurations
+├── scripts/           # Utility scripts
+│   ├── analysis/      # Data analysis scripts
+│   └── maintenance/   # Database maintenance
+├── tests/             # Test suite
+└── docs/              # Documentation
+```
+
+## Architecture
+
+- **Data Collection**: Web3.py + Alchemy for blockchain data
+- **Storage**: TimescaleDB (PostgreSQL) for time-series data
+- **Caching**: Redis for deduplication and performance
+- **Processing**: Python-based ETL pipeline
+- **API**: FastAPI for REST endpoints
+- **Frontend**: React-based dashboard (Phase 3)
+
+## Configuration
+
+### Environment Variables
+
+See `.env.example` for all available configuration options.
+
+Key variables:
+- `ALCHEMY_API_KEY`: Your Alchemy API key
+- `DATABASE_URL`: PostgreSQL connection string
+- `REDIS_URL`: Redis connection string
+- `COLLECTION_INTERVAL`: How often to collect data (seconds)
+
+### TimescaleDB
+
+The project uses TimescaleDB for efficient time-series data storage:
+- Automatic partitioning with hypertables
+- Continuous aggregates for real-time analytics
+- Data retention policies
+- Compression for historical data
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Acknowledgments
+
+- Alchemy for blockchain data access
+- TimescaleDB for time-series database
+- The Ethereum community for inspiration
+
+```
+
+## File: .dockerignore
+
+- Extension:
+- Language: unknown
+- Size: 323 bytes
+- Created: 2025-07-08 13:19:54
+- Modified: 2025-07-07 15:37:00
+
+### Code
+
+```unknown
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.pytest_cache/
+.coverage
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# Poetry
+dist/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project specific
+.env
+*.log
+data/
+logs/
+notebooks/.ipynb_checkpoints/
+
+# Git
+.git/
+.gitignore
+
+```
+
+## File: .gitignore
+
+- Extension:
+- Language: unknown
+- Size: 4764 bytes
+- Created: 2025-07-08 13:45:05
+- Modified: 2025-07-08 13:45:05
+
+### Code
+
+```unknown
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[codz]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+#  Usually these files are written by a python script from a template
+#  before PyInstaller builds the exe, so as to inject date/other infos into it.
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py.cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# Translations
+*.mo
+*.pot
+
+# Django stuff:
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Flask stuff:
+instance/
+.webassets-cache
+
+# Scrapy stuff:
+.scrapy
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+.pybuilder/
+target/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+#   For a library or package, you might want to ignore these files since the code is
+#   intended to run in multiple environments; otherwise, check them in:
+# .python-version
+
+# pipenv
+#   According to pypa/pipenv#598, it is recommended to include Pipfile.lock in version control.
+#   However, in case of collaboration, if having platform-specific dependencies or dependencies
+#   having no cross-platform support, pipenv may install dependencies that don't work, or not
+#   install all needed dependencies.
+#Pipfile.lock
+
+# UV
+#   Similar to Pipfile.lock, it is generally recommended to include uv.lock in version control.
+#   This is especially recommended for binary packages to ensure reproducibility, and is more
+#   commonly ignored for libraries.
+#uv.lock
+
+# poetry
+#   Similar to Pipfile.lock, it is generally recommended to include poetry.lock in version control.
+#   This is especially recommended for binary packages to ensure reproducibility, and is more
+#   commonly ignored for libraries.
+#   https://python-poetry.org/docs/basic-usage/#commit-your-poetrylock-file-to-version-control
+#poetry.lock
+#poetry.toml
+
+# pdm
+#   Similar to Pipfile.lock, it is generally recommended to include pdm.lock in version control.
+#   pdm recommends including project-wide configuration in pdm.toml, but excluding .pdm-python.
+#   https://pdm-project.org/en/latest/usage/project/#working-with-version-control
+#pdm.lock
+#pdm.toml
+.pdm-python
+.pdm-build/
+
+# pixi
+#   Similar to Pipfile.lock, it is generally recommended to include pixi.lock in version control.
+#pixi.lock
+#   Pixi creates a virtual environment in the .pixi directory, just like venv module creates one
+#   in the .venv directory. It is recommended not to include this directory in version control.
+.pixi
+
+# PEP 582; used by e.g. github.com/David-OConnor/pyflow and github.com/pdm-project/pdm
+__pypackages__/
+
+# Celery stuff
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Environments
+.env
+.envrc
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# pytype static type analyzer
+.pytype/
+
+# Cython debug symbols
+cython_debug/
+
+# PyCharm
+#  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
+#  be found at https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore
+#  and can be added to the global gitignore or merged into this file.  For a more nuclear
+#  option (not recommended) you can uncomment the following to ignore the entire idea folder.
+#.idea/
+
+# Abstra
+# Abstra is an AI-powered process automation framework.
+# Ignore directories containing user credentials, local state, and settings.
+# Learn more at https://abstra.io/docs
+.abstra/
+
+# Visual Studio Code
+#  Visual Studio Code specific template is maintained in a separate VisualStudioCode.gitignore
+#  that can be found at https://github.com/github/gitignore/blob/main/Global/VisualStudioCode.gitignore
+#  and can be added to the global gitignore or merged into this file. However, if you prefer,
+#  you could uncomment the following to ignore the entire vscode folder
+# .vscode/
+
+# Ruff stuff:
+.ruff_cache/
+
+# PyPI configuration file
+.pypirc
+
+# Cursor
+#  Cursor is an AI-powered code editor. `.cursorignore` specifies files/directories to
+#  exclude from AI features like autocomplete and code analysis. Recommended for sensitive data
+#  refer to https://docs.cursor.com/context/ignore-files
+.cursorignore
+.cursorindexingignore
+
+# Marimo
+marimo/_static/
+marimo/_lsp/
+__marimo__/
+
+project_scope_README.md
+implementation_plans/
+scripts/debug_etl.py
+.mcp.json
+
+```
+
+## File: docker-compose.yml
+
+- Extension: .yml
+- Language: yaml
+- Size: 2181 bytes
+- Created: 2025-07-08 13:19:54
+- Modified: 2025-07-07 15:37:00
+
+### Code
+
+```yaml
+version: '3.8'
+
+services:
+  postgres:
+    image: timescale/timescaledb:latest-pg15
+    environment:
+      POSTGRES_DB: ethoscope
+      POSTGRES_USER: ethoscope
+      POSTGRES_PASSWORD: ethoscope_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/setup_timescale.sql:/docker-entrypoint-initdb.d/10-setup-timescale.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ethoscope"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Production backend (default)
+  backend:
+    build:
+      context: .
+      dockerfile: docker/backend.Dockerfile
+    environment:
+      DATABASE_URL: postgresql://ethoscope:ethoscope_password@postgres:5432/ethoscope
+      REDIS_URL: redis://redis:6379
+      ALCHEMY_API_KEY: ${ALCHEMY_API_KEY}
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app/backend
+
+  # Development container (optional)
+  backend-dev:
+    build:
+      context: .
+      dockerfile: docker/dev.Dockerfile
+    environment:
+      DATABASE_URL: postgresql://ethoscope:ethoscope_password@postgres:5432/ethoscope
+      REDIS_URL: redis://redis:6379
+      ALCHEMY_API_KEY: ${ALCHEMY_API_KEY}
+      PYTHONPATH: /app
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app/backend
+      - ./tests:/app/tests
+      - ./scripts:/app/scripts
+    profiles: ["dev"]  # Only runs with --profile dev
+
+  # pgAdmin for database inspection
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@ethoscope.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    profiles: ["tools"]  # Only runs with --profile tools
+
+volumes:
+  postgres_data:
+  redis_data:
+
+```
+
+## File: .env.example
+
+- Extension: .example
+- Language: unknown
+- Size: 769 bytes
+- Created: 2025-07-08 13:19:54
+- Modified: 2025-07-08 13:08:38
+
+### Code
+
+```unknown
+# Ethoscope Environment Configuration Template
+# Copy this file to .env and fill in your values
+
+# API Keys
+ALCHEMY_API_KEY=your_alchemy_api_key_here
+ALCHEMY_API_URL=https://eth-mainnet.g.alchemy.com/v2/your_alchemy_api_key_here
+DUNE_API_KEY=your_dune_api_key_here  # Optional for Phase 2
+FLASHBOTS_API_KEY=your_flashbots_api_key_here  # Optional for Phase 2
+
+# Database Configuration
+DATABASE_URL=postgresql://ethoscope:ethoscope_password@localhost:5432/ethoscope
+
+# Redis Configuration
+REDIS_URL=redis://localhost:6379
+
+# Application Settings
+ENVIRONMENT=development
+LOG_LEVEL=INFO
+
+# ETL Settings
+COLLECTION_INTERVAL=15  # seconds
+BATCH_SIZE=100
+RETRY_ATTEMPTS=3
+RETRY_DELAY=5  # seconds
+
+# Optional: Alchemy App ID (if you have one)
+ALCHEMY_APP_ID=your_app_id_here
+
+```
+
+## File: poetry.lock
+
+- Extension: .lock
+- Language: unknown
+- Size: 547536 bytes
+- Created: 2025-07-08 13:25:31
+- Modified: 2025-07-08 13:25:31
+
+### Code
+
+```unknown
 # This file is automatically @generated by Poetry 2.0.1 and should not be changed by hand.
 
 [[package]]
@@ -382,19 +1546,6 @@ files = [
 dev = ["backports.zoneinfo", "freezegun (>=1.0,<2.0)", "jinja2 (>=3.0)", "pytest (>=6.0)", "pytest-cov", "pytz", "setuptools", "tzdata"]
 
 [[package]]
-name = "backoff"
-version = "2.2.1"
-description = "Function decoration for backoff and retry"
-optional = false
-python-versions = ">=3.7,<4.0"
-groups = ["main"]
-markers = "python_version == \"3.11\" or python_version >= \"3.12\""
-files = [
-    {file = "backoff-2.2.1-py3-none-any.whl", hash = "sha256:63579f9a0628e06278f7e47b7d7d5b6ce20dc65c5e96a6f3ca99a6adca0396e8"},
-    {file = "backoff-2.2.1.tar.gz", hash = "sha256:03f829f5bb1923180821643f8753b0502c3b682293992485b0eef2807afa5cba"},
-]
-
-[[package]]
 name = "beautifulsoup4"
 version = "4.13.4"
 description = "Screen-scraping library"
@@ -628,19 +1779,6 @@ webencodings = "*"
 
 [package.extras]
 css = ["tinycss2 (>=1.1.0,<1.5)"]
-
-[[package]]
-name = "cachetools"
-version = "5.5.2"
-description = "Extensible memoizing collections and decorators"
-optional = false
-python-versions = ">=3.7"
-groups = ["main"]
-markers = "python_version == \"3.11\" or python_version >= \"3.12\""
-files = [
-    {file = "cachetools-5.5.2-py3-none-any.whl", hash = "sha256:d26a22bcc62eb95c3beabd9f1ee5e820d3d2704fe2967cbe350e20c8ffcd3f0a"},
-    {file = "cachetools-5.5.2.tar.gz", hash = "sha256:1a661caa9175d26759571b2e19580f9d6393969e5dfca11fdb1f947a23e640d4"},
-]
 
 [[package]]
 name = "certifi"
@@ -3712,15 +4850,15 @@ virtualenv = ">=20.10.0"
 
 [[package]]
 name = "prometheus-client"
-version = "0.20.0"
+version = "0.22.1"
 description = "Python client for the Prometheus monitoring system."
 optional = false
-python-versions = ">=3.8"
-groups = ["main", "notebook"]
+python-versions = ">=3.9"
+groups = ["notebook"]
 markers = "python_version == \"3.11\" or python_version >= \"3.12\""
 files = [
-    {file = "prometheus_client-0.20.0-py3-none-any.whl", hash = "sha256:cde524a85bce83ca359cc837f28b8c0db5cac7aa653a588fd7e84ba061c329e7"},
-    {file = "prometheus_client-0.20.0.tar.gz", hash = "sha256:287629d00b147a32dcb2be0b9df905da599b2d82f80377083ec8463309a4bb89"},
+    {file = "prometheus_client-0.22.1-py3-none-any.whl", hash = "sha256:cca895342e308174341b2cbf99a56bef291fbc0ef7b9e5412a0f26d653ba7094"},
+    {file = "prometheus_client-0.22.1.tar.gz", hash = "sha256:190f1331e783cf21eb60bca559354e0a4d4378facecf78f5428c39b675d20d28"},
 ]
 
 [package.extras]
@@ -4251,25 +5389,6 @@ files = [
 
 [package.extras]
 windows-terminal = ["colorama (>=0.4.6)"]
-
-[[package]]
-name = "pyjwt"
-version = "2.10.1"
-description = "JSON Web Token implementation in Python"
-optional = false
-python-versions = ">=3.9"
-groups = ["main"]
-markers = "python_version == \"3.11\" or python_version >= \"3.12\""
-files = [
-    {file = "PyJWT-2.10.1-py3-none-any.whl", hash = "sha256:dcdd193e30abefd5debf142f9adfcdd2b58004e644f25406ffaebd50bd98dacb"},
-    {file = "pyjwt-2.10.1.tar.gz", hash = "sha256:3cc5772eb20009233caf06e9d8a0577824723b44e6648ee0a2aedb6cf9381953"},
-]
-
-[package.extras]
-crypto = ["cryptography (>=3.4.0)"]
-dev = ["coverage[toml] (==5.0.4)", "cryptography (>=3.4.0)", "pre-commit", "pytest (>=6.0.0,<7.0.0)", "sphinx", "sphinx-rtd-theme", "zope.interface"]
-docs = ["sphinx", "sphinx-rtd-theme", "zope.interface"]
-tests = ["coverage[toml] (==5.0.4)", "pytest (>=6.0.0,<7.0.0)"]
 
 [[package]]
 name = "pyparsing"
@@ -4999,62 +6118,6 @@ files = [
     {file = "rpds_py-0.26.0-pp39-pypy39_pp73-win_amd64.whl", hash = "sha256:69a607203441e07e9a8a529cff1d5b73f6a160f22db1097211e6212a68567d11"},
     {file = "rpds_py-0.26.0.tar.gz", hash = "sha256:20dae58a859b0906f0685642e591056f1e787f3a8b39c8e8749a45dc7d26bdb0"},
 ]
-
-[[package]]
-name = "scipy"
-version = "1.16.0"
-description = "Fundamental algorithms for scientific computing in Python"
-optional = false
-python-versions = ">=3.11"
-groups = ["main"]
-markers = "python_version == \"3.11\" or python_version >= \"3.12\""
-files = [
-    {file = "scipy-1.16.0-cp311-cp311-macosx_10_14_x86_64.whl", hash = "sha256:deec06d831b8f6b5fb0b652433be6a09db29e996368ce5911faf673e78d20085"},
-    {file = "scipy-1.16.0-cp311-cp311-macosx_12_0_arm64.whl", hash = "sha256:d30c0fe579bb901c61ab4bb7f3eeb7281f0d4c4a7b52dbf563c89da4fd2949be"},
-    {file = "scipy-1.16.0-cp311-cp311-macosx_14_0_arm64.whl", hash = "sha256:b2243561b45257f7391d0f49972fca90d46b79b8dbcb9b2cb0f9df928d370ad4"},
-    {file = "scipy-1.16.0-cp311-cp311-macosx_14_0_x86_64.whl", hash = "sha256:e6d7dfc148135e9712d87c5f7e4f2ddc1304d1582cb3a7d698bbadedb61c7afd"},
-    {file = "scipy-1.16.0-cp311-cp311-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:90452f6a9f3fe5a2cf3748e7be14f9cc7d9b124dce19667b54f5b429d680d539"},
-    {file = "scipy-1.16.0-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:a2f0bf2f58031c8701a8b601df41701d2a7be17c7ffac0a4816aeba89c4cdac8"},
-    {file = "scipy-1.16.0-cp311-cp311-musllinux_1_2_aarch64.whl", hash = "sha256:6c4abb4c11fc0b857474241b812ce69ffa6464b4bd8f4ecb786cf240367a36a7"},
-    {file = "scipy-1.16.0-cp311-cp311-musllinux_1_2_x86_64.whl", hash = "sha256:b370f8f6ac6ef99815b0d5c9f02e7ade77b33007d74802efc8316c8db98fd11e"},
-    {file = "scipy-1.16.0-cp311-cp311-win_amd64.whl", hash = "sha256:a16ba90847249bedce8aa404a83fb8334b825ec4a8e742ce6012a7a5e639f95c"},
-    {file = "scipy-1.16.0-cp312-cp312-macosx_10_14_x86_64.whl", hash = "sha256:7eb6bd33cef4afb9fa5f1fb25df8feeb1e52d94f21a44f1d17805b41b1da3180"},
-    {file = "scipy-1.16.0-cp312-cp312-macosx_12_0_arm64.whl", hash = "sha256:1dbc8fdba23e4d80394ddfab7a56808e3e6489176d559c6c71935b11a2d59db1"},
-    {file = "scipy-1.16.0-cp312-cp312-macosx_14_0_arm64.whl", hash = "sha256:7dcf42c380e1e3737b343dec21095c9a9ad3f9cbe06f9c05830b44b1786c9e90"},
-    {file = "scipy-1.16.0-cp312-cp312-macosx_14_0_x86_64.whl", hash = "sha256:26ec28675f4a9d41587266084c626b02899db373717d9312fa96ab17ca1ae94d"},
-    {file = "scipy-1.16.0-cp312-cp312-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:952358b7e58bd3197cfbd2f2f2ba829f258404bdf5db59514b515a8fe7a36c52"},
-    {file = "scipy-1.16.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:03931b4e870c6fef5b5c0970d52c9f6ddd8c8d3e934a98f09308377eba6f3824"},
-    {file = "scipy-1.16.0-cp312-cp312-musllinux_1_2_aarch64.whl", hash = "sha256:512c4f4f85912767c351a0306824ccca6fd91307a9f4318efe8fdbd9d30562ef"},
-    {file = "scipy-1.16.0-cp312-cp312-musllinux_1_2_x86_64.whl", hash = "sha256:e69f798847e9add03d512eaf5081a9a5c9a98757d12e52e6186ed9681247a1ac"},
-    {file = "scipy-1.16.0-cp312-cp312-win_amd64.whl", hash = "sha256:adf9b1999323ba335adc5d1dc7add4781cb5a4b0ef1e98b79768c05c796c4e49"},
-    {file = "scipy-1.16.0-cp313-cp313-macosx_10_14_x86_64.whl", hash = "sha256:e9f414cbe9ca289a73e0cc92e33a6a791469b6619c240aa32ee18abdce8ab451"},
-    {file = "scipy-1.16.0-cp313-cp313-macosx_12_0_arm64.whl", hash = "sha256:bbba55fb97ba3cdef9b1ee973f06b09d518c0c7c66a009c729c7d1592be1935e"},
-    {file = "scipy-1.16.0-cp313-cp313-macosx_14_0_arm64.whl", hash = "sha256:58e0d4354eacb6004e7aa1cd350e5514bd0270acaa8d5b36c0627bb3bb486974"},
-    {file = "scipy-1.16.0-cp313-cp313-macosx_14_0_x86_64.whl", hash = "sha256:75b2094ec975c80efc273567436e16bb794660509c12c6a31eb5c195cbf4b6dc"},
-    {file = "scipy-1.16.0-cp313-cp313-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:6b65d232157a380fdd11a560e7e21cde34fdb69d65c09cb87f6cc024ee376351"},
-    {file = "scipy-1.16.0-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:1d8747f7736accd39289943f7fe53a8333be7f15a82eea08e4afe47d79568c32"},
-    {file = "scipy-1.16.0-cp313-cp313-musllinux_1_2_aarch64.whl", hash = "sha256:eb9f147a1b8529bb7fec2a85cf4cf42bdfadf9e83535c309a11fdae598c88e8b"},
-    {file = "scipy-1.16.0-cp313-cp313-musllinux_1_2_x86_64.whl", hash = "sha256:d2b83c37edbfa837a8923d19c749c1935ad3d41cf196006a24ed44dba2ec4358"},
-    {file = "scipy-1.16.0-cp313-cp313-win_amd64.whl", hash = "sha256:79a3c13d43c95aa80b87328a46031cf52508cf5f4df2767602c984ed1d3c6bbe"},
-    {file = "scipy-1.16.0-cp313-cp313t-macosx_10_14_x86_64.whl", hash = "sha256:f91b87e1689f0370690e8470916fe1b2308e5b2061317ff76977c8f836452a47"},
-    {file = "scipy-1.16.0-cp313-cp313t-macosx_12_0_arm64.whl", hash = "sha256:88a6ca658fb94640079e7a50b2ad3b67e33ef0f40e70bdb7dc22017dae73ac08"},
-    {file = "scipy-1.16.0-cp313-cp313t-macosx_14_0_arm64.whl", hash = "sha256:ae902626972f1bd7e4e86f58fd72322d7f4ec7b0cfc17b15d4b7006efc385176"},
-    {file = "scipy-1.16.0-cp313-cp313t-macosx_14_0_x86_64.whl", hash = "sha256:8cb824c1fc75ef29893bc32b3ddd7b11cf9ab13c1127fe26413a05953b8c32ed"},
-    {file = "scipy-1.16.0-cp313-cp313t-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:de2db7250ff6514366a9709c2cba35cb6d08498e961cba20d7cff98a7ee88938"},
-    {file = "scipy-1.16.0-cp313-cp313t-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:e85800274edf4db8dd2e4e93034f92d1b05c9421220e7ded9988b16976f849c1"},
-    {file = "scipy-1.16.0-cp313-cp313t-musllinux_1_2_aarch64.whl", hash = "sha256:4f720300a3024c237ace1cb11f9a84c38beb19616ba7c4cdcd771047a10a1706"},
-    {file = "scipy-1.16.0-cp313-cp313t-musllinux_1_2_x86_64.whl", hash = "sha256:aad603e9339ddb676409b104c48a027e9916ce0d2838830691f39552b38a352e"},
-    {file = "scipy-1.16.0-cp313-cp313t-win_amd64.whl", hash = "sha256:f56296fefca67ba605fd74d12f7bd23636267731a72cb3947963e76b8c0a25db"},
-    {file = "scipy-1.16.0.tar.gz", hash = "sha256:b5ef54021e832869c8cfb03bc3bf20366cbcd426e02a58e8a58d7584dfbb8f62"},
-]
-
-[package.dependencies]
-numpy = ">=1.25.2,<2.6"
-
-[package.extras]
-dev = ["cython-lint (>=0.12.2)", "doit (>=0.36.0)", "mypy (==1.10.0)", "pycodestyle", "pydevtool", "rich-click", "ruff (>=0.0.292)", "types-psutil", "typing_extensions"]
-doc = ["intersphinx_registry", "jupyterlite-pyodide-kernel", "jupyterlite-sphinx (>=0.19.1)", "jupytext", "linkify-it-py", "matplotlib (>=3.5)", "myst-nb (>=1.2.0)", "numpydoc", "pooch", "pydata-sphinx-theme (>=0.15.2)", "sphinx (>=5.0.0,<8.2.0)", "sphinx-copybutton", "sphinx-design (>=0.4.0)"]
-test = ["Cython", "array-api-strict (>=2.3.1)", "asv", "gmpy2", "hypothesis (>=6.30)", "meson", "mpmath", "ninja", "pooch", "pytest", "pytest-cov", "pytest-timeout", "pytest-xdist", "scikit-umfpack", "threadpoolctl"]
 
 [[package]]
 name = "seaborn"
@@ -6027,4 +7090,1707 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.11"
-content-hash = "cab10214bceef04d7e453a6e6a8e1eb9039b6690243addb215101c5c83c995eb"
+content-hash = "cf30eb85f92c5f0f1a5283bf59be20f60cbd8c7a1594874d773c571da229db9e"
+
+```
+
+## File: docker/backend.Dockerfile
+
+- Extension: .Dockerfile
+- Language: dockerfile
+- Size: 420 bytes
+- Created: 2025-07-08 13:19:54
+- Modified: 2025-07-07 15:37:00
+
+### Code
+
+```dockerfile
+FROM python:3.11-slim
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y \
+    gcc \
+    postgresql-client \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY pyproject.toml poetry.lock ./
+RUN pip install poetry && \
+    poetry config virtualenvs.create false && \
+    poetry install --no-dev
+
+COPY backend/ ./backend/
+COPY scripts/ ./scripts/
+
+CMD ["uvicorn", "backend.api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+```
+
+## File: docker/dev.Dockerfile
+
+- Extension: .Dockerfile
+- Language: dockerfile
+- Size: 606 bytes
+- Created: 2025-07-08 13:19:54
+- Modified: 2025-07-07 15:37:00
+
+### Code
+
+```dockerfile
+FROM python:3.11-slim
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y \
+    gcc \
+    postgresql-client \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install poetry in the container
+RUN pip install poetry
+
+# Copy only dependency files first (better caching)
+COPY pyproject.toml poetry.lock ./
+
+# Install dependencies including dev dependencies
+RUN poetry config virtualenvs.create false && \
+    poetry install --with dev
+
+# Copy source code
+COPY . .
+
+# Development command with reload
+CMD ["poetry", "run", "uvicorn", "backend.api.main:app", "--reload", "--host", "0.0.0.0", "--port", "8000"]
+
+```
+
+## File: .claude/settings.local.json
+
+- Extension: .json
+- Language: json
+- Size: 242 bytes
+- Created: 2025-07-08 13:31:32
+- Modified: 2025-07-08 13:31:32
+
+### Code
+
+```json
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls:*)",
+      "Bash(find:*)",
+      "Bash(-print)",
+      "Bash(mkdir:*)",
+      "mcp__postgres__query"
+    ],
+    "deny": []
+  },
+  "enabledMcpjsonServers": [
+    "postgres",
+    "github"
+  ]
+}
+```
+
+## File: backend/__init__.py
+
+- Extension: .py
+- Language: python
+- Size: 33 bytes
+- Created: 2025-07-08 13:44:46
+- Modified: 2025-07-08 13:44:46
+
+### Code
+
+```python
+"""Ethoscope backend package."""
+
+```
+
+## File: scripts/setup_timescale.sql
+
+- Extension: .sql
+- Language: sql
+- Size: 1328 bytes
+- Created: 2025-07-08 13:19:54
+- Modified: 2025-07-08 13:08:38
+
+### Code
+
+```sql
+-- Enable TimescaleDB extension
+CREATE EXTENSION IF NOT EXISTS timescaledb;
+
+-- Convert tables to hypertables
+SELECT create_hypertable('block_metrics', 'block_timestamp', chunk_time_interval => INTERVAL '1 day');
+SELECT create_hypertable('gas_metrics', 'timestamp', chunk_time_interval => INTERVAL '1 hour');
+SELECT create_hypertable('mempool_metrics', 'timestamp', chunk_time_interval => INTERVAL '1 hour');
+SELECT create_hypertable('network_health_scores', 'timestamp', chunk_time_interval => INTERVAL '1 hour');
+
+-- Create continuous aggregates for common queries
+CREATE MATERIALIZED VIEW gas_metrics_5min
+WITH (timescaledb.continuous) AS
+SELECT
+    time_bucket('5 minutes', timestamp) AS bucket,
+    AVG(gas_price_gwei) AS avg_gas_price,
+    MIN(gas_price_gwei) AS min_gas_price,
+    MAX(gas_price_gwei) AS max_gas_price,
+    AVG(pending_transactions) AS avg_pending_tx
+FROM gas_metrics
+GROUP BY bucket;
+
+-- Add retention policy (keep raw data for 30 days)
+SELECT add_retention_policy('gas_metrics', INTERVAL '30 days');
+SELECT add_retention_policy('mempool_metrics', INTERVAL '30 days');
+
+-- Add compression policy (compress data older than 7 days)
+ALTER TABLE gas_metrics SET (
+    timescaledb.compress,
+    timescaledb.compress_segmentby = 'timestamp'
+);
+
+SELECT add_compression_policy('gas_metrics', INTERVAL '7 days');
+
+```
+
+## File: scripts/run_etl.py
+
+- Extension: .py
+- Language: python
+- Size: 596 bytes
+- Created: 2025-07-08 13:44:46
+- Modified: 2025-07-08 13:44:46
+
+### Code
+
+```python
+import asyncio
+import logging
+import sys
+from pathlib import Path
+
+# Add project root to path
+sys.path.append(str(Path(__file__).parent.parent))
+
+from backend.etl.pipeline import ETLPipeline  # noqa: E402
+
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
+
+
+async def main():
+    """Run the ETL pipeline"""
+    pipeline = ETLPipeline()
+
+    try:
+        await pipeline.run()
+    except KeyboardInterrupt:
+        logging.info("Received shutdown signal")
+        await pipeline.stop()
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+
+```
+
+## File: scripts/test_integration.py
+
+- Extension: .py
+- Language: python
+- Size: 859 bytes
+- Created: 2025-07-08 13:44:46
+- Modified: 2025-07-08 13:44:46
+
+### Code
+
+```python
+import asyncio
+import sys
+from pathlib import Path
+
+sys.path.append(str(Path(__file__).parent.parent))
+
+from backend.etl.collectors.alchemy_collector import AlchemyCollector  # noqa: E402
+from backend.models.database import engine  # noqa: E402
+from backend.models.metrics import Base  # noqa: E402
+
+
+async def test_integration():
+    """Test full ETL pipeline integration"""
+    print("Creating database tables...")
+    Base.metadata.create_all(bind=engine)
+
+    print("Testing Alchemy connection...")
+    collector = AlchemyCollector()
+    metrics = await collector.collect()
+
+    print(f"Collected {len(metrics)} metrics:")
+    for metric in metrics:
+        print(f"  - {metric['metric_type']}: {metric.get('block_number', 'N/A')}")
+
+    print("\nIntegration test completed successfully!")
+
+
+if __name__ == "__main__":
+    asyncio.run(test_integration())
+
+```
+
+## File: scripts/clean_code.py
+
+- Extension: .py
+- Language: python
+- Size: 7425 bytes
+- Created: 2025-07-08 13:44:46
+- Modified: 2025-07-08 13:44:46
+
+### Code
+
+```python
+#!/usr/bin/env python3
+"""
+Clean and format code to pass pre-commit hooks.
+
+This script runs various code formatters and linters to ensure
+all files pass pre-commit checks before committing.
+"""
+
+import subprocess
+import sys
+from pathlib import Path
+from typing import List, Tuple
+
+
+def run_command(cmd: List[str], description: str) -> Tuple[int, str, str]:
+    """Run a command and return the result."""
+    print(f"\n🔧 {description}...")
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, check=False)
+        return result.returncode, result.stdout, result.stderr
+    except FileNotFoundError:
+        return 1, "", f"Command not found: {cmd[0]}"
+
+
+def find_python_files() -> List[Path]:
+    """Find all Python files in the project."""
+    root = Path(__file__).parent.parent
+    python_files = []
+
+    # Directories to search
+    dirs_to_search = ["backend", "scripts", "tests"]
+
+    for dir_name in dirs_to_search:
+        dir_path = root / dir_name
+        if dir_path.exists():
+            python_files.extend(dir_path.rglob("*.py"))
+
+    # Also check root directory Python files
+    python_files.extend(root.glob("*.py"))
+
+    return python_files
+
+
+def main():
+    """Main cleaning function."""
+    print("🧹 Starting code cleanup process...")
+
+    # Check if we're in a poetry environment
+    in_poetry = (
+        subprocess.run(["poetry", "env", "info"], capture_output=True).returncode == 0
+    )
+
+    prefix = ["poetry", "run"] if in_poetry else []
+
+    # Track if any step fails
+    has_errors = False
+
+    # 1. Remove trailing whitespace
+    print("\n📝 Removing trailing whitespace...")
+    python_files = find_python_files()
+    for file in python_files:
+        try:
+            with open(file, "r") as f:
+                content = f.read()
+
+            # Remove trailing whitespace from each line
+            cleaned = "\n".join(line.rstrip() for line in content.splitlines())
+
+            # Ensure file ends with newline
+            if cleaned and not cleaned.endswith("\n"):
+                cleaned += "\n"
+
+            with open(file, "w") as f:
+                f.write(cleaned)
+        except Exception as e:
+            print(f"  ⚠️  Error processing {file}: {e}")
+
+    # 2. Run isort to sort imports
+    returncode, stdout, stderr = run_command(
+        prefix + ["isort", "--profile", "black", "backend", "scripts", "tests"],
+        "Sorting imports with isort",
+    )
+    if returncode != 0:
+        print(f"  ⚠️  isort warnings: {stderr}")
+    else:
+        print("  ✅ Imports sorted")
+
+    # 3. Run black for formatting
+    returncode, stdout, stderr = run_command(
+        prefix + ["black", "backend", "scripts", "tests"], "Formatting code with black"
+    )
+    if returncode != 0:
+        print(f"  ❌ Black failed: {stderr}")
+        has_errors = True
+    else:
+        print("  ✅ Code formatted")
+
+    # 4. Run autoflake to remove unused imports
+    returncode, stdout, stderr = run_command(
+        prefix
+        + [
+            "autoflake",
+            "--in-place",
+            "--remove-all-unused-imports",
+            "--remove-unused-variables",
+            "--recursive",
+            "backend",
+            "scripts",
+            "tests",
+        ],
+        "Removing unused imports with autoflake",
+    )
+    if returncode == 127:  # Command not found
+        print("  ℹ️  autoflake not installed, installing...")
+        run_command(
+            ["poetry", "add", "--group", "dev", "autoflake"], "Installing autoflake"
+        )
+        # Retry after installation
+        returncode, stdout, stderr = run_command(
+            prefix
+            + [
+                "autoflake",
+                "--in-place",
+                "--remove-all-unused-imports",
+                "--remove-unused-variables",
+                "--recursive",
+                "backend",
+                "scripts",
+                "tests",
+            ],
+            "Retrying autoflake",
+        )
+
+    if returncode != 0 and returncode != 127:
+        print(f"  ⚠️  autoflake warnings: {stderr}")
+    else:
+        print("  ✅ Unused imports removed")
+
+    # 5. Run flake8 to check for issues
+    returncode, stdout, stderr = run_command(
+        prefix + ["flake8", "backend", "scripts", "tests"],
+        "Checking code style with flake8",
+    )
+    if returncode != 0:
+        print(f"  ⚠️  flake8 found issues:\n{stdout}")
+        has_errors = True
+    else:
+        print("  ✅ Code style check passed")
+
+    # 6. Fix common flake8 issues
+    if has_errors:
+        print("\n🔨 Attempting to fix common issues...")
+
+        # Add noqa comments for specific imports that need to be kept
+        files_with_model_imports = [
+            Path("alembic/env.py"),
+        ]
+
+        for file in files_with_model_imports:
+            if file.exists():
+                try:
+                    with open(file, "r") as f:
+                        content = f.read()
+
+                    # Add noqa comments to model imports if not already present
+                    lines = content.splitlines()
+                    for i, line in enumerate(lines):
+                        if (
+                            "from backend.models.metrics import" in line
+                            and "noqa" not in line
+                        ):
+                            lines[i] = line.rstrip() + "  # noqa: F401"
+                        elif (
+                            "from backend.etl.config import settings" in line
+                            and "noqa" not in line
+                        ):
+                            lines[i] = line.rstrip() + "  # noqa: E402"
+                        elif (
+                            "from backend.models.database import Base" in line
+                            and "noqa" not in line
+                        ):
+                            lines[i] = line.rstrip() + "  # noqa: E402"
+
+                    with open(file, "w") as f:
+                        f.write("\n".join(lines) + "\n")
+                except Exception as e:
+                    print(f"  ⚠️  Error fixing {file}: {e}")
+
+    # 7. Run mypy for type checking (informational only)
+    print("\n📊 Running type checker (informational)...")
+    returncode, stdout, stderr = run_command(
+        prefix + ["mypy", "--ignore-missing-imports", "backend"],
+        "Type checking with mypy",
+    )
+    if returncode != 0:
+        print("  ℹ️  Type checking found issues (not blocking):")
+        print(f"{stdout}")
+    else:
+        print("  ✅ Type checking passed")
+
+    # 8. Final check with pre-commit
+    print("\n🏁 Running pre-commit hooks...")
+    returncode, stdout, stderr = run_command(
+        prefix + ["pre-commit", "run", "--all-files"], "Final pre-commit check"
+    )
+    if returncode != 0:
+        print(f"  ⚠️  Some pre-commit hooks failed:\n{stdout}")
+        has_errors = True
+    else:
+        print("  ✅ All pre-commit hooks passed!")
+
+    # Summary
+    print("\n" + "=" * 50)
+    if has_errors:
+        print("⚠️  Some issues remain. Run 'make lint' to see details.")
+        print("You may need to fix these manually before committing.")
+        sys.exit(1)
+    else:
+        print("✅ Code is clean and ready to commit!")
+        print("\nYou can now run:")
+        print("  git add .")
+        print("  git commit -m 'Your commit message'")
+        sys.exit(0)
+
+
+if __name__ == "__main__":
+    main()
+
+```
+
+## File: alembic/script.py.mako
+
+- Extension: .mako
+- Language: unknown
+- Size: 704 bytes
+- Created: 2025-07-08 13:19:54
+- Modified: 2025-07-07 21:03:21
+
+### Code
+
+```unknown
+"""${message}
+
+Revision ID: ${up_revision}
+Revises: ${down_revision | comma,n}
+Create Date: ${create_date}
+
+"""
+from typing import Sequence, Union
+
+from alembic import op
+import sqlalchemy as sa
+${imports if imports else ""}
+
+# revision identifiers, used by Alembic.
+revision: str = ${repr(up_revision)}
+down_revision: Union[str, Sequence[str], None] = ${repr(down_revision)}
+branch_labels: Union[str, Sequence[str], None] = ${repr(branch_labels)}
+depends_on: Union[str, Sequence[str], None] = ${repr(depends_on)}
+
+
+def upgrade() -> None:
+    """Upgrade schema."""
+    ${upgrades if upgrades else "pass"}
+
+
+def downgrade() -> None:
+    """Downgrade schema."""
+    ${downgrades if downgrades else "pass"}
+
+```
+
+## File: alembic/env.py
+
+- Extension: .py
+- Language: python
+- Size: 2573 bytes
+- Created: 2025-07-08 13:44:48
+- Modified: 2025-07-08 13:44:48
+
+### Code
+
+```python
+import sys
+from logging.config import fileConfig
+from pathlib import Path
+
+from sqlalchemy import engine_from_config, pool
+
+from alembic import context
+
+# Add project root to Python path
+sys.path.append(str(Path(__file__).parent.parent))
+
+# Import your settings and models
+from backend.etl.config import settings  # noqa: E402
+from backend.models.database import Base  # noqa: E402
+
+# Import all your models so Alembic can detect them
+from backend.models.metrics import (  # noqa: E402, F401
+    BlockMetric,
+    GasMetric,
+    MempoolMetric,
+    NetworkHealthScore,
+)
+
+# this is the Alembic Config object, which provides
+# access to the values within the .ini file in use.
+config = context.config
+
+# Override the sqlalchemy.url with the one from settings
+config.set_main_option("sqlalchemy.url", settings.database.url)
+
+# Interpret the config file for Python logging.
+# This line sets up loggers basically.
+if config.config_file_name is not None:
+    fileConfig(config.config_file_name)
+
+# add your model's MetaData object here
+# for 'autogenerate' support
+target_metadata = Base.metadata
+
+# other values from the config, defined by the needs of env.py,
+# can be acquired:
+# my_important_option = config.get_main_option("my_important_option")
+# ... etc.
+
+
+def run_migrations_offline() -> None:
+    """Run migrations in 'offline' mode.
+
+    This configures the context with just a URL
+    and not an Engine, though an Engine is acceptable
+    here as well.  By skipping the Engine creation
+    we don't even need a DBAPI to be available.
+
+    Calls to context.execute() here emit the given string to the
+    script output.
+
+    """
+    url = config.get_main_option("sqlalchemy.url")
+    context.configure(
+        url=url,
+        target_metadata=target_metadata,
+        literal_binds=True,
+        dialect_opts={"paramstyle": "named"},
+    )
+
+    with context.begin_transaction():
+        context.run_migrations()
+
+
+def run_migrations_online() -> None:
+    """Run migrations in 'online' mode.
+
+    In this scenario we need to create an Engine
+    and associate a connection with the context.
+
+    """
+    connectable = engine_from_config(
+        config.get_section(config.config_ini_section, {}),
+        prefix="sqlalchemy.",
+        poolclass=pool.NullPool,
+    )
+
+    with connectable.connect() as connection:
+        context.configure(connection=connection, target_metadata=target_metadata)
+
+        with context.begin_transaction():
+            context.run_migrations()
+
+
+if context.is_offline_mode():
+    run_migrations_offline()
+else:
+    run_migrations_online()
+
+```
+
+## File: alembic/README
+
+- Extension:
+- Language: unknown
+- Size: 39 bytes
+- Created: 2025-07-08 13:19:54
+- Modified: 2025-07-07 21:15:00
+
+### Code
+
+```unknown
+Generic single-database configuration.
+
+```
+
+## File: tests/backend/test_collectors.py
+
+- Extension: .py
+- Language: python
+- Size: 1135 bytes
+- Created: 2025-07-08 13:44:46
+- Modified: 2025-07-08 13:44:46
+
+### Code
+
+```python
+from unittest.mock import Mock, patch
+
+import pytest
+
+from backend.etl.collectors.alchemy_collector import AlchemyCollector
+
+
+@pytest.mark.asyncio
+async def test_alchemy_collector():
+    """Test Alchemy collector basic functionality"""
+    with patch("backend.etl.collectors.alchemy_collector.Web3") as mock_web3:
+        # Mock Web3 responses
+        mock_instance = Mock()
+        mock_web3.return_value = mock_instance
+        mock_instance.is_connected.return_value = True
+        mock_instance.eth.get_block.return_value = {
+            "number": 18000000,
+            "timestamp": 1693526400,
+            "gasUsed": 15000000,
+            "gasLimit": 30000000,
+            "transactions": ["0x123", "0x456"],
+            "baseFeePerGas": 20000000000,
+        }
+        mock_instance.eth.gas_price = 25000000000
+        mock_instance.eth.get_block_transaction_count.return_value = 150
+
+        collector = AlchemyCollector()
+        metrics = await collector.collect()
+
+        assert len(metrics) >= 2
+        assert any(m["metric_type"] == "block" for m in metrics)
+        assert any(m["metric_type"] == "gas" for m in metrics)
+
+```
+
+## File: backend/middleware/__init__.py
+
+- Extension: .py
+- Language: python
+- Size: 52 bytes
+- Created: 2025-07-08 13:44:46
+- Modified: 2025-07-08 13:44:46
+
+### Code
+
+```python
+"""Middleware components for request processing."""
+
+```
+
+## File: backend/etl/config.py
+
+- Extension: .py
+- Language: python
+- Size: 2774 bytes
+- Created: 2025-07-08 13:44:46
+- Modified: 2025-07-08 13:44:46
+
+### Code
+
+```python
+from typing import Optional
+
+from pydantic import BaseModel, Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class CollectorConfig(BaseModel):
+    """Configuration for data collectors"""
+
+    alchemy_api_key: str
+    alchemy_api_url: Optional[str]
+    collection_interval: int = Field(
+        default=15, description="Collection interval in seconds"
+    )
+    batch_size: int = Field(default=100, description="Batch size for processing")
+    retry_attempts: int = Field(default=3, description="Number of retry attempts")
+    retry_delay: int = Field(default=5, description="Delay between retries in seconds")
+
+
+class DatabaseConfig(BaseModel):
+    """Database configuration"""
+
+    url: str
+    pool_size: int = Field(default=10, description="Connection pool size")
+    max_overflow: int = Field(default=20, description="Max overflow connections")
+    pool_timeout: int = Field(default=30, description="Pool timeout in seconds")
+
+
+class RedisConfig(BaseModel):
+    """Redis configuration"""
+
+    url: str
+    decode_responses: bool = Field(
+        default=True, description="Decode responses to strings"
+    )
+    max_connections: int = Field(default=50, description="Maximum connections")
+
+
+class Settings(BaseSettings):
+    """Application settings with environment variable support"""
+
+    # API Keys
+    alchemy_api_key: str = Field(..., env="ALCHEMY_API_KEY")
+    alchemy_api_url: str = Field(..., env="ALCHEMY_API_URL")
+    dune_api_key: Optional[str] = Field(None, env="DUNE_API_KEY")
+    flashbots_api_key: Optional[str] = Field(None, env="FLASHBOTS_API_KEY")
+
+    # Database
+    database_url: str = Field(
+        default="postgresql://ethoscope:ethoscope_password@localhost:5432/ethoscope",
+        env="DATABASE_URL",
+    )
+
+    # Redis
+    redis_url: str = Field(default="redis://localhost:6379", env="REDIS_URL")
+
+    # Application
+    environment: str = Field(default="development", env="ENVIRONMENT")
+    log_level: str = Field(default="INFO", env="LOG_LEVEL")
+
+    # Nested configs
+    @property
+    def collector(self) -> CollectorConfig:
+        return CollectorConfig(
+            alchemy_api_key=self.alchemy_api_key,
+            alchemy_api_url=self.alchemy_api_url,
+        )
+
+    @property
+    def database(self) -> DatabaseConfig:
+        return DatabaseConfig(
+            url=self.database_url,
+        )
+
+    @property
+    def redis(self) -> RedisConfig:
+        return RedisConfig(
+            url=self.redis_url,
+        )
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=False,
+        extra="allow",  # Allow extra fields from .env
+    )
+
+
+# Create global settings instance
+settings = Settings()
+
+# For backwards compatibility
+config = settings
+
+```
+
+## File: backend/etl/__init__.py
+
+- Extension: .py
+- Language: python
+- Size: 66 bytes
+- Created: 2025-07-08 13:44:46
+- Modified: 2025-07-08 13:44:46
+
+### Code
+
+```python
+"""ETL pipeline for blockchain data collection and processing."""
+
+```
+
+## File: backend/etl/pipeline.py
+
+- Extension: .py
+- Language: python
+- Size: 1568 bytes
+- Created: 2025-07-08 13:44:46
+- Modified: 2025-07-08 13:44:46
+
+### Code
+
+```python
+import asyncio
+import logging
+
+from backend.etl.collectors.alchemy_collector import AlchemyCollector
+from backend.etl.loaders.database_loader import DatabaseLoader
+from backend.etl.processors.metric_processor import MetricProcessor
+
+logger = logging.getLogger(__name__)
+
+
+class ETLPipeline:
+    """Main ETL pipeline orchestrator"""
+
+    def __init__(self):
+        self.collector = AlchemyCollector()
+        self.processor = MetricProcessor()
+        self.loader = DatabaseLoader()
+        self.running = False
+
+    async def run(self, interval: int = 15):
+        """Run the ETL pipeline continuously"""
+        self.running = True
+        logger.info("Starting ETL pipeline")
+
+        while self.running:
+            try:
+                # Collect data
+                raw_data = await self.collector.collect()
+                logger.info(f"Collected {len(raw_data)} raw metrics")
+
+                # Process data
+                processed_data = await self.processor.process(raw_data)
+                logger.info(f"Processed {len(processed_data)} metrics")
+
+                # Load data
+                await self.loader.load(processed_data)
+                logger.info("Data loaded successfully")
+
+                # Wait for next cycle
+                await asyncio.sleep(interval)
+
+            except Exception as e:
+                logger.error(f"Pipeline error: {e}", exc_info=True)
+                await asyncio.sleep(interval)
+
+    async def stop(self):
+        """Stop the pipeline"""
+        self.running = False
+        logger.info("Stopping ETL pipeline")
+
+```
+
+## File: backend/utils/__init__.py
+
+- Extension: .py
+- Language: python
+- Size: 37 bytes
+- Created: 2025-07-08 13:44:46
+- Modified: 2025-07-08 13:44:46
+
+### Code
+
+```python
+"""Utility functions and helpers."""
+
+```
+
+## File: backend/models/metrics.py
+
+- Extension: .py
+- Language: python
+- Size: 2543 bytes
+- Created: 2025-07-08 13:44:46
+- Modified: 2025-07-08 13:44:46
+
+### Code
+
+```python
+import uuid
+from datetime import datetime
+
+from sqlalchemy import BigInteger, Column, DateTime, Float, Index, Integer, String
+from sqlalchemy.dialects.postgresql import UUID
+
+from .database import Base
+
+
+class BlockMetric(Base):
+    """Block-level metrics"""
+
+    __tablename__ = "block_metrics"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    timestamp = Column(DateTime, nullable=False, default=datetime.utcnow)
+    block_number = Column(BigInteger, nullable=False, unique=True, index=True)
+    block_timestamp = Column(DateTime, nullable=False)
+    gas_used = Column(BigInteger, nullable=False)
+    gas_limit = Column(BigInteger, nullable=False)
+    transaction_count = Column(Integer, nullable=False)
+    base_fee_per_gas = Column(BigInteger)
+    difficulty = Column(BigInteger)
+
+    __table_args__ = (
+        Index("idx_block_metrics_timestamp", "timestamp"),
+        Index("idx_block_metrics_block_timestamp", "block_timestamp"),
+    )
+
+
+class GasMetric(Base):
+    """Gas price metrics"""
+
+    __tablename__ = "gas_metrics"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    timestamp = Column(DateTime, nullable=False, default=datetime.utcnow, index=True)
+    gas_price_wei = Column(BigInteger, nullable=False)
+    gas_price_gwei = Column(Float, nullable=False)
+    pending_transactions = Column(Integer)
+
+    # Gas price percentiles
+    gas_price_p25 = Column(Float)
+    gas_price_p50 = Column(Float)
+    gas_price_p75 = Column(Float)
+    gas_price_p95 = Column(Float)
+
+
+class MempoolMetric(Base):
+    """Mempool statistics"""
+
+    __tablename__ = "mempool_metrics"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    timestamp = Column(DateTime, nullable=False, default=datetime.utcnow, index=True)
+    pending_count = Column(Integer, nullable=False)
+    avg_gas_price_gwei = Column(Float)
+    min_gas_price_gwei = Column(Float)
+    max_gas_price_gwei = Column(Float)
+
+
+class NetworkHealthScore(Base):
+    """Computed network health scores"""
+
+    __tablename__ = "network_health_scores"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    timestamp = Column(DateTime, nullable=False, default=datetime.utcnow, index=True)
+    overall_score = Column(Float, nullable=False)  # 0-100
+    gas_score = Column(Float, nullable=False)
+    congestion_score = Column(Float, nullable=False)
+    block_time_score = Column(Float, nullable=False)
+
+    # Additional metadata
+    calculation_version = Column(String(50), default="1.0")
+
+```
+
+## File: backend/models/database.py
+
+- Extension: .py
+- Language: python
+- Size: 647 bytes
+- Created: 2025-07-08 13:44:46
+- Modified: 2025-07-08 13:44:46
+
+### Code
+
+```python
+from sqlalchemy import MetaData, create_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+
+from backend.etl.config import settings
+
+engine = create_engine(
+    settings.database.url,
+    pool_size=settings.database.pool_size,
+    max_overflow=settings.database.max_overflow,
+    pool_timeout=settings.database.pool_timeout,
+)
+
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
+metadata = MetaData()
+
+
+def get_db():
+    """Dependency to get database session"""
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+```
+
+## File: backend/models/__init__.py
+
+- Extension: .py
+- Language: python
+- Size: 37 bytes
+- Created: 2025-07-08 13:44:46
+- Modified: 2025-07-08 13:44:46
+
+### Code
+
+```python
+"""Database models for Ethoscope."""
+
+```
+
+## File: backend/ml/__init__.py
+
+- Extension: .py
+- Language: python
+- Size: 45 bytes
+- Created: 2025-07-08 13:44:46
+- Modified: 2025-07-08 13:44:46
+
+### Code
+
+```python
+"""Machine learning models and analytics."""
+
+```
+
+## File: backend/api/__init__.py
+
+- Extension: .py
+- Language: python
+- Size: 35 bytes
+- Created: 2025-07-08 13:44:46
+- Modified: 2025-07-08 13:44:46
+
+### Code
+
+```python
+"""API endpoints for Ethoscope."""
+
+```
+
+## File: backend/services/__init__.py
+
+- Extension: .py
+- Language: python
+- Size: 40 bytes
+- Created: 2025-07-08 13:44:46
+- Modified: 2025-07-08 13:44:46
+
+### Code
+
+```python
+"""Business logic and service layer."""
+
+```
+
+## File: backend/etl/collectors/alchemy_collector.py
+
+- Extension: .py
+- Language: python
+- Size: 7950 bytes
+- Created: 2025-07-08 13:44:46
+- Modified: 2025-07-08 13:44:46
+
+### Code
+
+```python
+import json
+import os
+from datetime import datetime
+from typing import Any, Dict, List, Optional
+
+import redis
+import requests
+from dotenv import load_dotenv
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
+from web3 import Web3
+from web3.exceptions import BlockNotFound
+from web3.providers import HTTPProvider
+
+from .base import BaseCollector
+
+load_dotenv()
+
+
+class AlchemyCollector(BaseCollector):
+    """Collector for Ethereum blockchain data via Alchemy"""
+
+    def __init__(self):
+        super().__init__("alchemy")
+        self.api_key = os.getenv("ALCHEMY_API_KEY")
+        self.api_url = os.getenv("ALCHEMY_API_URL")
+
+        # Set up connection pooling with retry strategy
+        session = requests.Session()
+        retry = Retry(
+            total=3, backoff_factor=0.3, status_forcelist=[500, 502, 503, 504]
+        )
+        adapter = HTTPAdapter(max_retries=retry, pool_connections=10, pool_maxsize=10)
+        session.mount("http://", adapter)
+        session.mount("https://", adapter)
+
+        # Initialize Web3 with custom session
+        self.w3 = Web3(
+            HTTPProvider(
+                f"{self.api_url}", request_kwargs={"timeout": 30}, session=session
+            )
+        )
+
+        if not self.w3.is_connected():
+            raise ConnectionError("Failed to connect to Alchemy")
+
+        # Initialize Redis client for caching
+        self.redis_client = redis.from_url(
+            os.getenv("REDIS_URL", "redis://localhost:6379"), decode_responses=True
+        )
+        self.cache_ttl = 15  # seconds
+
+    async def collect(self) -> List[Dict[str, Any]]:
+        """Collect current blockchain metrics with caching"""
+        metrics = []
+
+        # Check cache for recent block to avoid duplicate processing
+        cached_block = self._get_cached_block()
+
+        # Get latest block
+        latest_block = self.w3.eth.get_block("latest")
+
+        # Skip if we already processed this block
+        if cached_block and cached_block == latest_block["number"]:
+            self.logger.debug(
+                f"Block {latest_block['number']} already processed, skipping"
+            )
+            return []
+
+        # Cache the block number
+        self._cache_block(latest_block["number"])
+
+        # Get gas price
+        gas_price = self.w3.eth.gas_price
+
+        # Get pending transaction count
+        try:
+            pending_tx_count = self.w3.eth.get_block_transaction_count("pending")
+        except BlockNotFound:
+            self.logger.warning(
+                "Pending block not found, using 0 for pending transaction count"
+            )
+            pending_tx_count = 0
+
+        # Calculate base metrics
+        block_metric = {
+            "metric_type": "block",
+            "timestamp": datetime.utcnow(),
+            "block_number": latest_block["number"],
+            "block_timestamp": datetime.fromtimestamp(latest_block["timestamp"]),
+            "gas_used": latest_block["gasUsed"],
+            "gas_limit": latest_block["gasLimit"],
+            "transaction_count": len(latest_block["transactions"]),
+            "base_fee_per_gas": latest_block.get("baseFeePerGas", 0),
+            "difficulty": latest_block.get("difficulty", 0),
+        }
+
+        gas_metric = {
+            "metric_type": "gas",
+            "timestamp": datetime.utcnow(),
+            "gas_price_wei": gas_price,
+            "gas_price_gwei": float(Web3.from_wei(gas_price, "gwei")),
+            "pending_transactions": pending_tx_count,
+        }
+
+        metrics.extend([block_metric, gas_metric])
+
+        # Get mempool stats
+        mempool_metric = await self._get_mempool_stats()
+        if mempool_metric:
+            metrics.append(mempool_metric)
+
+        # Cache metrics for quick access
+        self._cache_metrics(metrics)
+
+        return metrics
+
+    async def _get_mempool_stats(self) -> Optional[Dict[str, Any]]:
+        """Get mempool statistics with caching"""
+        try:
+            # Check cache first
+            cached_mempool = self._get_cached_mempool()
+            if cached_mempool:
+                return cached_mempool
+
+            # Get pending transactions sample
+            try:
+                pending_block = self.w3.eth.get_block("pending", full_transactions=True)
+            except BlockNotFound:
+                self.logger.warning("Pending block not found for mempool stats")
+                return None
+
+            if pending_block and "transactions" in pending_block:
+                transactions = pending_block["transactions"][:100]  # Sample first 100
+
+                gas_prices = [tx["gasPrice"] for tx in transactions if "gasPrice" in tx]
+
+                mempool_data = {
+                    "metric_type": "mempool",
+                    "timestamp": datetime.utcnow(),
+                    "pending_count": len(pending_block["transactions"]),
+                    "avg_gas_price_gwei": (
+                        float(Web3.from_wei(sum(gas_prices) / len(gas_prices), "gwei"))
+                        if gas_prices
+                        else 0
+                    ),
+                    "min_gas_price_gwei": (
+                        float(Web3.from_wei(min(gas_prices), "gwei"))
+                        if gas_prices
+                        else 0
+                    ),
+                    "max_gas_price_gwei": (
+                        float(Web3.from_wei(max(gas_prices), "gwei"))
+                        if gas_prices
+                        else 0
+                    ),
+                }
+
+                # Cache mempool data
+                self._cache_mempool(mempool_data)
+
+                return mempool_data
+        except Exception as e:
+            self.logger.error(f"Error getting mempool stats: {e}")
+            return None
+
+    def _get_cached_block(self) -> Optional[int]:
+        """Get cached block number"""
+        try:
+            cached = self.redis_client.get("latest_block")
+            return int(cached) if cached else None
+        except Exception as e:
+            self.logger.warning(f"Redis cache error: {e}")
+            return None
+
+    def _cache_block(self, block_number: int):
+        """Cache block number"""
+        try:
+            self.redis_client.setex("latest_block", self.cache_ttl, str(block_number))
+        except Exception as e:
+            self.logger.warning(f"Redis cache error: {e}")
+
+    def _get_cached_mempool(self) -> Optional[Dict[str, Any]]:
+        """Get cached mempool data"""
+        try:
+            cached = self.redis_client.get("mempool_stats")
+            return json.loads(cached) if cached else None
+        except Exception as e:
+            self.logger.warning(f"Redis cache error: {e}")
+            return None
+
+    def _cache_mempool(self, data: Dict[str, Any]):
+        """Cache mempool data"""
+        try:
+            # Convert datetime to string for JSON serialization
+            data_copy = data.copy()
+            data_copy["timestamp"] = data_copy["timestamp"].isoformat()
+            self.redis_client.setex("mempool_stats", 5, json.dumps(data_copy))
+        except Exception as e:
+            self.logger.warning(f"Redis cache error: {e}")
+
+    def _cache_metrics(self, metrics: List[Dict[str, Any]]):
+        """Cache latest metrics for quick access"""
+        try:
+            for metric in metrics:
+                metric_copy = metric.copy()
+                if isinstance(metric_copy.get("timestamp"), datetime):
+                    metric_copy["timestamp"] = metric_copy["timestamp"].isoformat()
+                if isinstance(metric_copy.get("block_timestamp"), datetime):
+                    metric_copy["block_timestamp"] = metric_copy[
+                        "block_timestamp"
+                    ].isoformat()
+
+                key = f"latest_{metric['metric_type']}"
+                self.redis_client.setex(key, self.cache_ttl, json.dumps(metric_copy))
+        except Exception as e:
+            self.logger.warning(f"Redis cache error: {e}")
+
+```
+
+## File: backend/etl/collectors/__init__.py
+
+- Extension: .py
+- Language: python
+- Size: 0 bytes
+- Created: 2025-07-08 13:44:46
+- Modified: 2025-07-08 13:44:46
+
+### Code
+
+```python
+
+```
+
+## File: backend/etl/collectors/base.py
+
+- Extension: .py
+- Language: python
+- Size: 879 bytes
+- Created: 2025-07-08 13:44:46
+- Modified: 2025-07-08 13:44:46
+
+### Code
+
+```python
+import asyncio
+import logging
+from abc import ABC, abstractmethod
+from typing import Any, Dict, List
+
+logger = logging.getLogger(__name__)
+
+
+class BaseCollector(ABC):
+    """Base class for all data collectors"""
+
+    def __init__(self, name: str):
+        self.name = name
+        self.logger = logging.getLogger(f"{__name__}.{name}")
+
+    @abstractmethod
+    async def collect(self) -> List[Dict[str, Any]]:
+        """Collect data from source"""
+
+    async def run_collection(self, interval: int = 60):
+        """Run collection continuously at specified interval"""
+        while True:
+            try:
+                data = await self.collect()
+                self.logger.info(f"Collected {len(data)} items")
+                yield data
+            except Exception as e:
+                self.logger.error(f"Collection error: {e}")
+            await asyncio.sleep(interval)
+
+```
+
+## File: backend/etl/processors/__init__.py
+
+- Extension: .py
+- Language: python
+- Size: 60 bytes
+- Created: 2025-07-08 13:44:46
+- Modified: 2025-07-08 13:44:46
+
+### Code
+
+```python
+"""Data processors for transforming raw blockchain data."""
+
+```
+
+## File: backend/etl/processors/metric_processor.py
+
+- Extension: .py
+- Language: python
+- Size: 2367 bytes
+- Created: 2025-07-08 13:44:46
+- Modified: 2025-07-08 13:44:46
+
+### Code
+
+```python
+import logging
+from typing import Any, Dict, List
+
+logger = logging.getLogger(__name__)
+
+
+class MetricProcessor:
+    """Process raw metrics into structured format"""
+
+    async def process(
+        self, raw_metrics: List[Dict[str, Any]]
+    ) -> Dict[str, List[Dict[str, Any]]]:
+        """Process raw metrics by type"""
+        processed = {
+            "block_metrics": [],
+            "gas_metrics": [],
+            "mempool_metrics": [],
+        }
+
+        for metric in raw_metrics:
+            metric_type = metric.get("metric_type")
+
+            if metric_type == "block":
+                processed["block_metrics"].append(self._process_block_metric(metric))
+            elif metric_type == "gas":
+                processed["gas_metrics"].append(self._process_gas_metric(metric))
+            elif metric_type == "mempool":
+                processed["mempool_metrics"].append(
+                    self._process_mempool_metric(metric)
+                )
+
+        return processed
+
+    def _process_block_metric(self, metric: Dict[str, Any]) -> Dict[str, Any]:
+        """Process block metric"""
+        return {
+            "timestamp": metric["timestamp"],
+            "block_number": metric["block_number"],
+            "block_timestamp": metric["block_timestamp"],
+            "gas_used": metric["gas_used"],
+            "gas_limit": metric["gas_limit"],
+            "transaction_count": metric["transaction_count"],
+            "base_fee_per_gas": metric.get("base_fee_per_gas"),
+            "difficulty": metric.get("difficulty"),
+        }
+
+    def _process_gas_metric(self, metric: Dict[str, Any]) -> Dict[str, Any]:
+        """Process gas metric"""
+        return {
+            "timestamp": metric["timestamp"],
+            "gas_price_wei": metric["gas_price_wei"],
+            "gas_price_gwei": metric["gas_price_gwei"],
+            "pending_transactions": metric.get("pending_transactions"),
+        }
+
+    def _process_mempool_metric(self, metric: Dict[str, Any]) -> Dict[str, Any]:
+        """Process mempool metric"""
+        return {
+            "timestamp": metric["timestamp"],
+            "pending_count": metric["pending_count"],
+            "avg_gas_price_gwei": metric.get("avg_gas_price_gwei"),
+            "min_gas_price_gwei": metric.get("min_gas_price_gwei"),
+            "max_gas_price_gwei": metric.get("max_gas_price_gwei"),
+        }
+
+```
+
+## File: backend/etl/loaders/__init__.py
+
+- Extension: .py
+- Language: python
+- Size: 61 bytes
+- Created: 2025-07-08 13:44:46
+- Modified: 2025-07-08 13:44:46
+
+### Code
+
+```python
+"""Data loaders for persisting processed data to storage."""
+
+```
+
+## File: backend/etl/loaders/database_loader.py
+
+- Extension: .py
+- Language: python
+- Size: 1974 bytes
+- Created: 2025-07-08 13:44:46
+- Modified: 2025-07-08 13:44:46
+
+### Code
+
+```python
+import logging
+from typing import Any, Dict, List
+
+from sqlalchemy.dialects.postgresql import insert
+
+from backend.models.database import SessionLocal
+from backend.models.metrics import BlockMetric, GasMetric, MempoolMetric
+
+logger = logging.getLogger(__name__)
+
+
+class DatabaseLoader:
+    """Load processed metrics into database"""
+
+    async def load(self, processed_data: Dict[str, List[Dict[str, Any]]]):
+        """Load all metric types"""
+        db = SessionLocal()
+        try:
+            # Load block metrics
+            if processed_data.get("block_metrics"):
+                await self._load_block_metrics(db, processed_data["block_metrics"])
+
+            # Load gas metrics
+            if processed_data.get("gas_metrics"):
+                await self._load_gas_metrics(db, processed_data["gas_metrics"])
+
+            # Load mempool metrics
+            if processed_data.get("mempool_metrics"):
+                await self._load_mempool_metrics(db, processed_data["mempool_metrics"])
+
+            db.commit()
+            logger.info("All metrics loaded successfully")
+
+        except Exception as e:
+            db.rollback()
+            logger.error(f"Error loading data: {e}")
+            raise
+        finally:
+            db.close()
+
+    async def _load_block_metrics(self, db, metrics: List[Dict[str, Any]]):
+        """Load block metrics with upsert"""
+        for metric in metrics:
+            stmt = insert(BlockMetric).values(**metric)
+            stmt = stmt.on_conflict_do_update(
+                index_elements=["block_number"], set_=metric
+            )
+            db.execute(stmt)
+
+    async def _load_gas_metrics(self, db, metrics: List[Dict[str, Any]]):
+        """Load gas metrics"""
+        for metric in metrics:
+            db.add(GasMetric(**metric))
+
+    async def _load_mempool_metrics(self, db, metrics: List[Dict[str, Any]]):
+        """Load mempool metrics"""
+        for metric in metrics:
+            db.add(MempoolMetric(**metric))
+
+```
+
+## File: alembic/versions/15715f86a411_initial_schema.py
+
+- Extension: .py
+- Language: python
+- Size: 4580 bytes
+- Created: 2025-07-08 13:19:54
+- Modified: 2025-07-07 21:15:01
+
+### Code
+
+```python
+"""Initial schema
+
+Revision ID: 15715f86a411
+Revises:
+Create Date: 2025-07-07 21:11:52.620095
+
+"""
+from typing import Sequence, Union
+
+import sqlalchemy as sa
+
+from alembic import op
+
+# revision identifiers, used by Alembic.
+revision: str = "15715f86a411"
+down_revision: Union[str, Sequence[str], None] = None
+branch_labels: Union[str, Sequence[str], None] = None
+depends_on: Union[str, Sequence[str], None] = None
+
+
+def upgrade() -> None:
+    """Upgrade schema."""
+    # ### commands auto generated by Alembic - please adjust! ###
+    op.create_table(
+        "block_metrics",
+        sa.Column("id", sa.UUID(), nullable=False),
+        sa.Column("timestamp", sa.DateTime(), nullable=False),
+        sa.Column("block_number", sa.BigInteger(), nullable=False),
+        sa.Column("block_timestamp", sa.DateTime(), nullable=False),
+        sa.Column("gas_used", sa.BigInteger(), nullable=False),
+        sa.Column("gas_limit", sa.BigInteger(), nullable=False),
+        sa.Column("transaction_count", sa.Integer(), nullable=False),
+        sa.Column("base_fee_per_gas", sa.BigInteger(), nullable=True),
+        sa.Column("difficulty", sa.BigInteger(), nullable=True),
+        sa.PrimaryKeyConstraint("id"),
+    )
+    op.create_index(
+        "idx_block_metrics_block_timestamp",
+        "block_metrics",
+        ["block_timestamp"],
+        unique=False,
+    )
+    op.create_index(
+        "idx_block_metrics_timestamp", "block_metrics", ["timestamp"], unique=False
+    )
+    op.create_index(
+        op.f("ix_block_metrics_block_number"),
+        "block_metrics",
+        ["block_number"],
+        unique=True,
+    )
+    op.create_table(
+        "gas_metrics",
+        sa.Column("id", sa.UUID(), nullable=False),
+        sa.Column("timestamp", sa.DateTime(), nullable=False),
+        sa.Column("gas_price_wei", sa.BigInteger(), nullable=False),
+        sa.Column("gas_price_gwei", sa.Float(), nullable=False),
+        sa.Column("pending_transactions", sa.Integer(), nullable=True),
+        sa.Column("gas_price_p25", sa.Float(), nullable=True),
+        sa.Column("gas_price_p50", sa.Float(), nullable=True),
+        sa.Column("gas_price_p75", sa.Float(), nullable=True),
+        sa.Column("gas_price_p95", sa.Float(), nullable=True),
+        sa.PrimaryKeyConstraint("id"),
+    )
+    op.create_index(
+        op.f("ix_gas_metrics_timestamp"), "gas_metrics", ["timestamp"], unique=False
+    )
+    op.create_table(
+        "mempool_metrics",
+        sa.Column("id", sa.UUID(), nullable=False),
+        sa.Column("timestamp", sa.DateTime(), nullable=False),
+        sa.Column("pending_count", sa.Integer(), nullable=False),
+        sa.Column("avg_gas_price_gwei", sa.Float(), nullable=True),
+        sa.Column("min_gas_price_gwei", sa.Float(), nullable=True),
+        sa.Column("max_gas_price_gwei", sa.Float(), nullable=True),
+        sa.PrimaryKeyConstraint("id"),
+    )
+    op.create_index(
+        op.f("ix_mempool_metrics_timestamp"),
+        "mempool_metrics",
+        ["timestamp"],
+        unique=False,
+    )
+    op.create_table(
+        "network_health_scores",
+        sa.Column("id", sa.UUID(), nullable=False),
+        sa.Column("timestamp", sa.DateTime(), nullable=False),
+        sa.Column("overall_score", sa.Float(), nullable=False),
+        sa.Column("gas_score", sa.Float(), nullable=False),
+        sa.Column("congestion_score", sa.Float(), nullable=False),
+        sa.Column("block_time_score", sa.Float(), nullable=False),
+        sa.Column("calculation_version", sa.String(length=50), nullable=True),
+        sa.PrimaryKeyConstraint("id"),
+    )
+    op.create_index(
+        op.f("ix_network_health_scores_timestamp"),
+        "network_health_scores",
+        ["timestamp"],
+        unique=False,
+    )
+    # ### end Alembic commands ###
+
+
+def downgrade() -> None:
+    """Downgrade schema."""
+    # ### commands auto generated by Alembic - please adjust! ###
+    op.drop_index(
+        op.f("ix_network_health_scores_timestamp"), table_name="network_health_scores"
+    )
+    op.drop_table("network_health_scores")
+    op.drop_index(op.f("ix_mempool_metrics_timestamp"), table_name="mempool_metrics")
+    op.drop_table("mempool_metrics")
+    op.drop_index(op.f("ix_gas_metrics_timestamp"), table_name="gas_metrics")
+    op.drop_table("gas_metrics")
+    op.drop_index(op.f("ix_block_metrics_block_number"), table_name="block_metrics")
+    op.drop_index("idx_block_metrics_timestamp", table_name="block_metrics")
+    op.drop_index("idx_block_metrics_block_timestamp", table_name="block_metrics")
+    op.drop_table("block_metrics")
+    # ### end Alembic commands ###
+
+```
