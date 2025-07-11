@@ -1,7 +1,7 @@
 import json
 import os
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 import redis
 import requests
@@ -23,26 +23,42 @@ class AlchemyCollector(BaseCollector):
     def __init__(self):
         super().__init__("alchemy")
         self.api_key = os.getenv("ALCHEMY_API_KEY")
-        self.api_url = os.getenv("ALCHEMY_API_URL")
+
+        # Construct Ethereum mainnet URL from API key
+        if not self.api_key:
+            raise ValueError("ALCHEMY_API_KEY environment variable not set")
+
+        self.api_url = f"https://eth-mainnet.g.alchemy.com/v2/{self.api_key}"
+        self.logger.info(f"Connecting to Alchemy at: {self.api_url[:50]}...")
+        print(f"Connecting to Alchemy at: {self.api_url}...")
 
         # Set up connection pooling with retry strategy
         session = requests.Session()
-        retry = Retry(
-            total=3, backoff_factor=0.3, status_forcelist=[500, 502, 503, 504]
-        )
+        retry = Retry(total=3, backoff_factor=0.3, status_forcelist=[500, 502, 503, 504])
         adapter = HTTPAdapter(max_retries=retry, pool_connections=10, pool_maxsize=10)
         session.mount("http://", adapter)
         session.mount("https://", adapter)
 
         # Initialize Web3 with custom session
-        self.w3 = Web3(
-            HTTPProvider(
-                f"{self.api_url}", request_kwargs={"timeout": 30}, session=session
+        try:
+            self.w3 = Web3(
+                HTTPProvider(self.api_url, request_kwargs={"timeout": 30}, session=session)
             )
-        )
 
-        if not self.w3.is_connected():
-            raise ConnectionError("Failed to connect to Alchemy")
+            # Test connection
+            if not self.w3.is_connected():
+                raise ConnectionError(
+                    "Failed to connect to Alchemy - is_connected() returned False"
+                )
+
+            # Try to get the latest block number as a connection test
+            latest_block = self.w3.eth.block_number
+            self.logger.info(f"Successfully connected to Alchemy. Latest block: {latest_block}")
+
+        except Exception as e:
+            self.logger.error(f"Failed to connect to Alchemy: {e}")
+            self.logger.error(f"API URL: {self.api_url[:50]}...")
+            raise ConnectionError(f"Failed to connect to Alchemy: {e}")
 
         # Initialize Redis client for caching
         self.redis_client = redis.from_url(
@@ -50,7 +66,7 @@ class AlchemyCollector(BaseCollector):
         )
         self.cache_ttl = 15  # seconds
 
-    async def collect(self) -> List[Dict[str, Any]]:
+    async def collect(self) -> list[dict[str, Any]]:
         """Collect current blockchain metrics with caching"""
         metrics = []
 
@@ -62,9 +78,7 @@ class AlchemyCollector(BaseCollector):
 
         # Skip if we already processed this block
         if cached_block and cached_block == latest_block["number"]:
-            self.logger.debug(
-                f"Block {latest_block['number']} already processed, skipping"
-            )
+            self.logger.debug(f"Block {latest_block['number']} already processed, skipping")
             return []
 
         # Cache the block number
@@ -77,9 +91,7 @@ class AlchemyCollector(BaseCollector):
         try:
             pending_tx_count = self.w3.eth.get_block_transaction_count("pending")
         except BlockNotFound:
-            self.logger.warning(
-                "Pending block not found, using 0 for pending transaction count"
-            )
+            self.logger.warning("Pending block not found, using 0 for pending transaction count")
             pending_tx_count = 0
 
         # Calculate base metrics
@@ -115,7 +127,7 @@ class AlchemyCollector(BaseCollector):
 
         return metrics
 
-    async def _get_mempool_stats(self) -> Optional[Dict[str, Any]]:
+    async def _get_mempool_stats(self) -> Optional[dict[str, Any]]:
         """Get mempool statistics with caching"""
         try:
             # Check cache first
@@ -145,14 +157,10 @@ class AlchemyCollector(BaseCollector):
                         else 0
                     ),
                     "min_gas_price_gwei": (
-                        float(Web3.from_wei(min(gas_prices), "gwei"))
-                        if gas_prices
-                        else 0
+                        float(Web3.from_wei(min(gas_prices), "gwei")) if gas_prices else 0
                     ),
                     "max_gas_price_gwei": (
-                        float(Web3.from_wei(max(gas_prices), "gwei"))
-                        if gas_prices
-                        else 0
+                        float(Web3.from_wei(max(gas_prices), "gwei")) if gas_prices else 0
                     ),
                 }
 
@@ -167,7 +175,7 @@ class AlchemyCollector(BaseCollector):
     def _get_cached_block(self) -> Optional[int]:
         """Get cached block number"""
         try:
-            cached = self.redis_client.get("latest_block")
+            cached = self.redis_client.get("latest_block_number")
             return int(cached) if cached else None
         except Exception as e:
             self.logger.warning(f"Redis cache error: {e}")
@@ -176,11 +184,11 @@ class AlchemyCollector(BaseCollector):
     def _cache_block(self, block_number: int):
         """Cache block number"""
         try:
-            self.redis_client.setex("latest_block", self.cache_ttl, str(block_number))
+            self.redis_client.setex("latest_block_number", self.cache_ttl, str(block_number))
         except Exception as e:
             self.logger.warning(f"Redis cache error: {e}")
 
-    def _get_cached_mempool(self) -> Optional[Dict[str, Any]]:
+    def _get_cached_mempool(self) -> Optional[dict[str, Any]]:
         """Get cached mempool data"""
         try:
             cached = self.redis_client.get("mempool_stats")
@@ -189,7 +197,7 @@ class AlchemyCollector(BaseCollector):
             self.logger.warning(f"Redis cache error: {e}")
             return None
 
-    def _cache_mempool(self, data: Dict[str, Any]):
+    def _cache_mempool(self, data: dict[str, Any]):
         """Cache mempool data"""
         try:
             # Convert datetime to string for JSON serialization
@@ -199,7 +207,7 @@ class AlchemyCollector(BaseCollector):
         except Exception as e:
             self.logger.warning(f"Redis cache error: {e}")
 
-    def _cache_metrics(self, metrics: List[Dict[str, Any]]):
+    def _cache_metrics(self, metrics: list[dict[str, Any]]):
         """Cache latest metrics for quick access"""
         try:
             for metric in metrics:
@@ -207,9 +215,7 @@ class AlchemyCollector(BaseCollector):
                 if isinstance(metric_copy.get("timestamp"), datetime):
                     metric_copy["timestamp"] = metric_copy["timestamp"].isoformat()
                 if isinstance(metric_copy.get("block_timestamp"), datetime):
-                    metric_copy["block_timestamp"] = metric_copy[
-                        "block_timestamp"
-                    ].isoformat()
+                    metric_copy["block_timestamp"] = metric_copy["block_timestamp"].isoformat()
 
                 key = f"latest_{metric['metric_type']}"
                 self.redis_client.setex(key, self.cache_ttl, json.dumps(metric_copy))

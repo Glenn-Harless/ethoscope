@@ -12,6 +12,11 @@ sys.path.append(str(Path(__file__).parent.parent))
 # Import your settings and models
 from backend.etl.config import settings  # noqa: E402
 from backend.models.database import Base  # noqa: E402
+from backend.models.l2_metrics import (  # noqa: E402, F401
+    L2NetworkMetric,
+    L2TransactionCost,
+    L2TVLMetric,
+)
 
 # Import all your models so Alembic can detect them
 from backend.models.metrics import (  # noqa: E402, F401
@@ -19,6 +24,11 @@ from backend.models.metrics import (  # noqa: E402, F401
     GasMetric,
     MempoolMetric,
     NetworkHealthScore,
+)
+from backend.models.mev_metrics import (  # noqa: E402, F401
+    MEVBlockAnalysis,
+    MEVBoostStats,
+    MEVMetric,
 )
 
 # this is the Alembic Config object, which provides

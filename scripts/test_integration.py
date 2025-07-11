@@ -4,9 +4,9 @@ from pathlib import Path
 
 sys.path.append(str(Path(__file__).parent.parent))
 
-from backend.etl.collectors.alchemy_collector import AlchemyCollector  # noqa: E402
-from backend.models.database import engine  # noqa: E402
-from backend.models.metrics import Base  # noqa: E402
+from backend.etl.collectors.alchemy_collector import AlchemyCollector
+from backend.models.database import engine
+from backend.models.metrics import Base
 
 
 async def test_integration():
