@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, List
+from typing import Any
 
 from pydantic import BaseModel, Field, validator
 
@@ -25,7 +25,7 @@ class MetricValidator:
     """Validate metrics data quality"""
 
     @staticmethod
-    def validate_metric(metric: Dict[str, Any], metric_type: str) -> bool:
+    def validate_metric(metric: dict[str, Any], metric_type: str) -> bool:
         """Validate metric data quality"""
         try:
             # Check for required fields
@@ -56,7 +56,7 @@ class MetricValidator:
             return False
 
     @staticmethod
-    def detect_outliers(values: List[float], threshold: float = 3.0) -> List[int]:
+    def detect_outliers(values: list[float], threshold: float = 3.0) -> list[int]:
         """Detect outliers using z-score method"""
         import numpy as np
         from scipy import stats

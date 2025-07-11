@@ -2,7 +2,6 @@ import asyncio
 import json
 import logging
 from datetime import datetime
-from typing import Dict, List, Set
 
 import redis.asyncio as redis
 from fastapi import WebSocket
@@ -16,8 +15,8 @@ class WebSocketManager:
     """Manage WebSocket connections and real-time updates"""
 
     def __init__(self):
-        self.active_connections: List[WebSocket] = []
-        self.subscriptions: Dict[WebSocket, Set[str]] = {}
+        self.active_connections: list[WebSocket] = []
+        self.subscriptions: dict[WebSocket, set[str]] = {}
         self.redis_client = None
         self.pubsub = None
         self.background_task = None
@@ -79,7 +78,7 @@ class WebSocketManager:
             logger.error(f"WebSocket message handling error: {e}")
             await websocket.send_json({"type": "error", "message": str(e)})
 
-    async def _subscribe(self, websocket: WebSocket, channels: List[str]):
+    async def _subscribe(self, websocket: WebSocket, channels: list[str]):
         """Subscribe to channels"""
         valid_channels = {
             "gas_prices",
@@ -101,7 +100,7 @@ class WebSocketManager:
             {"type": "subscribed", "channels": list(self.subscriptions[websocket])}
         )
 
-    async def _unsubscribe(self, websocket: WebSocket, channels: List[str]):
+    async def _unsubscribe(self, websocket: WebSocket, channels: list[str]):
         """Unsubscribe from channels"""
         for channel in channels:
             if channel in self.subscriptions[websocket]:
@@ -109,9 +108,7 @@ class WebSocketManager:
 
                 # Check if any connection still needs this channel
                 still_needed = any(
-                    channel in subs
-                    for ws, subs in self.subscriptions.items()
-                    if ws != websocket
+                    channel in subs for ws, subs in self.subscriptions.items() if ws != websocket
                 )
 
                 if not still_needed:
@@ -121,7 +118,7 @@ class WebSocketManager:
             {"type": "unsubscribed", "channels": list(self.subscriptions[websocket])}
         )
 
-    async def broadcast(self, channel: str, data: Dict):
+    async def broadcast(self, channel: str, data: dict):
         """Broadcast data to subscribed connections"""
         # Publish to Redis for multi-instance support
         if self.redis_client:
@@ -159,7 +156,7 @@ class WebSocketManager:
         except Exception as e:
             logger.error(f"Redis listener error: {e}")
 
-    async def send_metric_update(self, metric_type: str, data: Dict):
+    async def send_metric_update(self, metric_type: str, data: dict):
         """Send metric update to subscribed clients"""
         await self.broadcast(metric_type, data)
 

@@ -1,6 +1,6 @@
 import os
 from datetime import datetime, timedelta
-from typing import Any, Dict
+from typing import Any
 
 import jwt
 from fastapi import Depends, HTTPException
@@ -38,7 +38,7 @@ class APIKeyAuth:
 
     async def verify_api_key(
         self, credentials: HTTPAuthorizationCredentials = Depends(security)
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Verify API key and return user info"""
         api_key = credentials.credentials
 
@@ -47,9 +47,7 @@ class APIKeyAuth:
 
         return self.api_keys[api_key]
 
-    def create_jwt_token(
-        self, user_info: Dict[str, Any], expires_delta: timedelta = None
-    ) -> str:
+    def create_jwt_token(self, user_info: dict[str, Any], expires_delta: timedelta = None) -> str:
         """Create JWT token for WebSocket auth"""
         if expires_delta:
             expire = datetime.utcnow() + expires_delta

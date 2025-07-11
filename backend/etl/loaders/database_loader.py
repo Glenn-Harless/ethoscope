@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, List
+from typing import Any
 
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import IntegrityError
@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 class DatabaseLoader:
     """Enhanced database loader for all metric types"""
 
-    async def load(self, processed_data: Dict[str, List[Dict[str, Any]]]):
+    async def load(self, processed_data: dict[str, list[dict[str, Any]]]):
         """Load all metric types with error handling"""
         db = SessionLocal()
         try:
@@ -59,22 +59,20 @@ class DatabaseLoader:
         finally:
             db.close()
 
-    async def _load_block_metrics(self, db, metrics: List[Dict[str, Any]]) -> int:
+    async def _load_block_metrics(self, db, metrics: list[dict[str, Any]]) -> int:
         """Load block metrics with upsert"""
         loaded = 0
         for metric in metrics:
             try:
                 stmt = insert(BlockMetric).values(**metric)
-                stmt = stmt.on_conflict_do_update(
-                    index_elements=["block_number"], set_=metric
-                )
+                stmt = stmt.on_conflict_do_update(index_elements=["block_number"], set_=metric)
                 db.execute(stmt)
                 loaded += 1
             except IntegrityError as e:
                 logger.warning(f"Duplicate block metric: {e}")
         return loaded
 
-    async def _load_gas_metrics(self, db, metrics: List[Dict[str, Any]]) -> int:
+    async def _load_gas_metrics(self, db, metrics: list[dict[str, Any]]) -> int:
         """Load gas metrics"""
         loaded = 0
         for metric in metrics:
@@ -85,7 +83,7 @@ class DatabaseLoader:
                 logger.error(f"Error loading gas metric: {e}")
         return loaded
 
-    async def _load_mempool_metrics(self, db, metrics: List[Dict[str, Any]]) -> int:
+    async def _load_mempool_metrics(self, db, metrics: list[dict[str, Any]]) -> int:
         """Load mempool metrics"""
         loaded = 0
         for metric in metrics:
@@ -96,7 +94,7 @@ class DatabaseLoader:
                 logger.error(f"Error loading mempool metric: {e}")
         return loaded
 
-    async def _load_mev_metrics(self, db, metrics: List[Dict[str, Any]]) -> int:
+    async def _load_mev_metrics(self, db, metrics: list[dict[str, Any]]) -> int:
         """Load MEV metrics"""
         loaded = 0
         for metric in metrics:
@@ -107,7 +105,7 @@ class DatabaseLoader:
                 logger.error(f"Error loading MEV metric: {e}")
         return loaded
 
-    async def _load_mev_boost_stats(self, db, metrics: List[Dict[str, Any]]) -> int:
+    async def _load_mev_boost_stats(self, db, metrics: list[dict[str, Any]]) -> int:
         """Load MEV boost statistics"""
         loaded = 0
         for metric in metrics:
@@ -118,7 +116,7 @@ class DatabaseLoader:
                 logger.error(f"Error loading MEV boost stats: {e}")
         return loaded
 
-    async def _load_l2_network_metrics(self, db, metrics: List[Dict[str, Any]]) -> int:
+    async def _load_l2_network_metrics(self, db, metrics: list[dict[str, Any]]) -> int:
         """Load L2 network metrics"""
         loaded = 0
         for metric in metrics:
@@ -129,9 +127,7 @@ class DatabaseLoader:
                 logger.error(f"Error loading L2 network metric: {e}")
         return loaded
 
-    async def _load_l2_transaction_costs(
-        self, db, metrics: List[Dict[str, Any]]
-    ) -> int:
+    async def _load_l2_transaction_costs(self, db, metrics: list[dict[str, Any]]) -> int:
         """Load L2 transaction costs"""
         loaded = 0
         for metric in metrics:
@@ -142,7 +138,7 @@ class DatabaseLoader:
                 logger.error(f"Error loading L2 transaction cost: {e}")
         return loaded
 
-    async def _load_l2_tvl_metrics(self, db, metrics: List[Dict[str, Any]]) -> int:
+    async def _load_l2_tvl_metrics(self, db, metrics: list[dict[str, Any]]) -> int:
         """Load L2 TVL metrics"""
         loaded = 0
         for metric in metrics:
@@ -153,9 +149,7 @@ class DatabaseLoader:
                 logger.error(f"Error loading L2 TVL metric: {e}")
         return loaded
 
-    async def _load_network_health_scores(
-        self, db, metrics: List[Dict[str, Any]]
-    ) -> int:
+    async def _load_network_health_scores(self, db, metrics: list[dict[str, Any]]) -> int:
         """Load network health scores"""
         loaded = 0
         for metric in metrics:

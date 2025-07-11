@@ -1,11 +1,11 @@
 import logging
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 import numpy as np
 from scipy import stats
 
-from backend.models.database import Session
+from backend.models.database import SessionLocal as Session
 from backend.models.metrics import BlockMetric, GasMetric
 from backend.models.mev_metrics import MEVMetric
 
@@ -37,24 +37,18 @@ class DynamicNetworkHealthCalculator:
         self.z_score_threshold = 3.0
         self.iqr_multiplier = 1.5
 
-    async def calculate_health_score(self, db: Session) -> Dict[str, Any]:
+    async def calculate_health_score(self, db: Session) -> dict[str, Any]:
         """Calculate comprehensive network health with dynamic baselines"""
         try:
             end_time = datetime.utcnow()
 
             # Calculate individual component scores
             gas_efficiency = await self._calculate_gas_efficiency_score(db, end_time)
-            network_stability = await self._calculate_network_stability_score(
-                db, end_time
-            )
+            network_stability = await self._calculate_network_stability_score(db, end_time)
             mev_fairness = await self._calculate_mev_fairness_score(db, end_time)
-            block_production = await self._calculate_block_production_score(
-                db, end_time
-            )
+            block_production = await self._calculate_block_production_score(db, end_time)
             mempool_health = await self._calculate_mempool_health_score(db, end_time)
-            validator_performance = await self._calculate_validator_performance_score(
-                db, end_time
-            )
+            validator_performance = await self._calculate_validator_performance_score(db, end_time)
 
             # Calculate weighted overall score
             scores = {
@@ -66,9 +60,7 @@ class DynamicNetworkHealthCalculator:
                 "validator_performance": validator_performance,
             }
 
-            overall_score = sum(
-                self.weights[key] * value["score"] for key, value in scores.items()
-            )
+            overall_score = sum(self.weights[key] * value["score"] for key, value in scores.items())
 
             # Detect anomalies across all metrics
             anomalies = await self._detect_anomalies(db, end_time)
@@ -86,9 +78,7 @@ class DynamicNetworkHealthCalculator:
                 "confidence_level": confidence,
                 "component_scores": {k: v["score"] for k, v in scores.items()},
                 "component_details": scores,
-                "health_status": self._get_dynamic_health_status(
-                    overall_score, anomalies
-                ),
+                "health_status": self._get_dynamic_health_status(overall_score, anomalies),
                 "anomalies_detected": anomalies,
                 "recommendations": recommendations,
                 "ml_features": self._extract_ml_features(scores, anomalies),
@@ -100,7 +90,7 @@ class DynamicNetworkHealthCalculator:
 
     async def _calculate_gas_efficiency_score(
         self, db: Session, end_time: datetime
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Calculate gas efficiency with dynamic baselines"""
         scores_by_window = {}
 
@@ -108,9 +98,7 @@ class DynamicNetworkHealthCalculator:
             start_time = end_time - window_delta
 
             gas_metrics = (
-                db.query(GasMetric)
-                .filter(GasMetric.timestamp.between(start_time, end_time))
-                .all()
+                db.query(GasMetric).filter(GasMetric.timestamp.between(start_time, end_time)).all()
             )
 
             if not gas_metrics:
@@ -127,20 +115,12 @@ class DynamicNetworkHealthCalculator:
             if current_gas <= baseline_p50:
                 score = 100
             elif current_gas <= baseline_p95:
-                score = (
-                    100
-                    - ((current_gas - baseline_p50) / (baseline_p95 - baseline_p50))
-                    * 50
-                )
+                score = 100 - ((current_gas - baseline_p50) / (baseline_p95 - baseline_p50)) * 50
             else:
                 score = max(0, 50 - ((current_gas - baseline_p95) / baseline_p95) * 50)
 
             # Calculate volatility penalty
-            volatility = (
-                np.std(gas_prices) / np.mean(gas_prices)
-                if np.mean(gas_prices) > 0
-                else 0
-            )
+            volatility = np.std(gas_prices) / np.mean(gas_prices) if np.mean(gas_prices) > 0 else 0
             volatility_penalty = min(20, volatility * 100)
 
             scores_by_window[window_name] = {
@@ -164,22 +144,18 @@ class DynamicNetworkHealthCalculator:
         return {
             "score": weighted_score,
             "windows": scores_by_window,
-            "trend": (
-                self._calculate_trend(gas_prices) if len(gas_prices) > 10 else "stable"
-            ),
+            "trend": (self._calculate_trend(gas_prices) if len(gas_prices) > 10 else "stable"),
         }
 
     async def _calculate_mev_fairness_score(
         self, db: Session, end_time: datetime
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Calculate MEV fairness score based on user impact"""
         window = timedelta(hours=6)
         start_time = end_time - window
 
         mev_metrics = (
-            db.query(MEVMetric)
-            .filter(MEVMetric.timestamp.between(start_time, end_time))
-            .all()
+            db.query(MEVMetric).filter(MEVMetric.timestamp.between(start_time, end_time)).all()
         )
 
         if not mev_metrics:
@@ -191,7 +167,8 @@ class DynamicNetworkHealthCalculator:
         avg_mev_per_block = total_mev_revenue / total_blocks if total_blocks > 0 else 0
 
         # Count harmful MEV (sandwich attacks)
-        total_sandwiches = sum(m.sandwich_attack_count for m in mev_metrics)
+        # For now, assume no sandwich attacks as we don't have this data yet
+        total_sandwiches = 0  # TODO: implement sandwich attack detection
         sandwich_rate = total_sandwiches / total_blocks if total_blocks > 0 else 0
 
         # Score calculation
@@ -205,9 +182,7 @@ class DynamicNetworkHealthCalculator:
         base_score -= min(40, sandwich_rate * 1000)
 
         # Check builder diversity
-        builder_diversity = (
-            len(set(m.builder_address for m in mev_metrics)) / total_blocks
-        )
+        builder_diversity = len(set(m.builder_pubkey for m in mev_metrics)) / total_blocks
         diversity_bonus = min(10, builder_diversity * 20)
 
         final_score = max(0, min(100, base_score + diversity_bonus))
@@ -262,9 +237,7 @@ class DynamicNetworkHealthCalculator:
         else:
             return 40.0
 
-    async def _detect_anomalies(
-        self, db: Session, end_time: datetime
-    ) -> List[Dict[str, Any]]:
+    async def _detect_anomalies(self, db: Session, end_time: datetime) -> list[dict[str, Any]]:
         """Detect anomalies using statistical methods"""
         anomalies = []
         window = timedelta(hours=24)
@@ -299,8 +272,7 @@ class DynamicNetworkHealthCalculator:
             block_times = []
             for i in range(1, len(block_metrics)):
                 time_diff = (
-                    block_metrics[i].block_timestamp
-                    - block_metrics[i - 1].block_timestamp
+                    block_metrics[i].block_timestamp - block_metrics[i - 1].block_timestamp
                 ).total_seconds()
                 block_times.append(time_diff)
 
@@ -314,9 +286,7 @@ class DynamicNetworkHealthCalculator:
 
         # MEV spike detection
         mev_metrics = (
-            db.query(MEVMetric)
-            .filter(MEVMetric.timestamp.between(start_time, end_time))
-            .all()
+            db.query(MEVMetric).filter(MEVMetric.timestamp.between(start_time, end_time)).all()
         )
 
         if len(mev_metrics) > 10:
@@ -332,11 +302,11 @@ class DynamicNetworkHealthCalculator:
 
     def _detect_statistical_anomalies(
         self,
-        values: List[float],
-        timestamps: List[datetime],
+        values: list[float],
+        timestamps: list[datetime],
         metric_name: str,
         expected_value: Optional[float] = None,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Detect anomalies using Z-score and IQR methods"""
         anomalies = []
         values_array = np.array(values)
@@ -351,9 +321,7 @@ class DynamicNetworkHealthCalculator:
         IQR = Q3 - Q1
         lower_bound = Q1 - self.iqr_multiplier * IQR
         upper_bound = Q3 + self.iqr_multiplier * IQR
-        iqr_anomalies = np.where(
-            (values_array < lower_bound) | (values_array > upper_bound)
-        )[0]
+        iqr_anomalies = np.where((values_array < lower_bound) | (values_array > upper_bound))[0]
 
         # Combine both methods
         all_anomaly_indices = set(z_anomalies) | set(iqr_anomalies)
@@ -370,9 +338,7 @@ class DynamicNetworkHealthCalculator:
                     "value": values[idx],
                     "z_score": z_scores[idx],
                     "severity": severity,
-                    "type": (
-                        "spike" if values[idx] > np.median(values_array) else "drop"
-                    ),
+                    "type": ("spike" if values[idx] > np.median(values_array) else "drop"),
                     "context": {
                         "median": float(np.median(values_array)),
                         "std": float(np.std(values_array)),
@@ -407,9 +373,7 @@ class DynamicNetworkHealthCalculator:
         else:
             return "low"
 
-    def _extract_ml_features(
-        self, scores: Dict, anomalies: List[Dict]
-    ) -> Dict[str, Any]:
+    def _extract_ml_features(self, scores: dict, anomalies: list[dict]) -> dict[str, Any]:
         """Extract features for ML models (Phase 3 preparation)"""
         return {
             "score_vector": [v["score"] for v in scores.values()],
@@ -424,7 +388,7 @@ class DynamicNetworkHealthCalculator:
             "component_correlations": self._calculate_component_correlations(scores),
         }
 
-    def _calculate_component_correlations(self, scores: Dict) -> Dict[str, float]:
+    def _calculate_component_correlations(self, scores: dict) -> dict[str, float]:
         """Calculate correlations between component scores for pattern detection"""
         score_values = {k: v["score"] for k, v in scores.items()}
         correlations = {}
@@ -445,7 +409,7 @@ class DynamicNetworkHealthCalculator:
         # Normalize to -1 to 1 range
         return (x - 50) * (y - 50) / 2500
 
-    def _default_health_score(self) -> Dict[str, Any]:
+    def _default_health_score(self) -> dict[str, Any]:
         """Return default health score when calculation fails"""
         return {
             "metric_type": "network_health",
@@ -457,7 +421,260 @@ class DynamicNetworkHealthCalculator:
             "mev_impact_score": 50.0,
             "stability_score": 50.0,
             "health_status": "Unknown",
-            "recommendations": [
-                "Unable to calculate network health - please try again later"
-            ],
+            "recommendations": ["Unable to calculate network health - please try again later"],
         }
+
+    async def _calculate_network_stability_score(
+        self, db: Session, end_time: datetime
+    ) -> dict[str, Any]:
+        """Calculate network stability based on block time consistency and reorgs"""
+        window = timedelta(hours=24)
+        start_time = end_time - window
+
+        block_metrics = (
+            db.query(BlockMetric)
+            .filter(BlockMetric.timestamp.between(start_time, end_time))
+            .order_by(BlockMetric.block_number)
+            .all()
+        )
+
+        if len(block_metrics) < 10:
+            return {"score": 75, "details": "Insufficient data for stability analysis"}
+
+        # Calculate block time variance
+        block_times = []
+        for i in range(1, len(block_metrics)):
+            time_diff = (
+                block_metrics[i].block_timestamp - block_metrics[i - 1].block_timestamp
+            ).total_seconds()
+            block_times.append(time_diff)
+
+        if block_times:
+            variance = np.var(block_times)
+            mean_time = np.mean(block_times)
+            cv = np.sqrt(variance) / mean_time if mean_time > 0 else 0
+
+            # Score based on coefficient of variation
+            if cv < 0.1:
+                score = 100
+            elif cv < 0.2:
+                score = 85
+            elif cv < 0.3:
+                score = 70
+            else:
+                score = max(50, 100 - cv * 100)
+        else:
+            score = 75
+
+        return {
+            "score": score,
+            "block_time_cv": cv if block_times else 0,
+            "mean_block_time": np.mean(block_times) if block_times else 12,
+        }
+
+    async def _calculate_block_production_score(
+        self, db: Session, end_time: datetime
+    ) -> dict[str, Any]:
+        """Calculate block production health"""
+        window = timedelta(hours=1)
+        start_time = end_time - window
+
+        block_count = (
+            db.query(BlockMetric)
+            .filter(BlockMetric.timestamp.between(start_time, end_time))
+            .count()
+        )
+
+        # Expected blocks in an hour (12 second blocks)
+        expected_blocks = 300
+        actual_ratio = block_count / expected_blocks
+
+        if actual_ratio >= 0.95:
+            score = 100
+        elif actual_ratio >= 0.90:
+            score = 90
+        elif actual_ratio >= 0.85:
+            score = 75
+        else:
+            score = max(50, actual_ratio * 100)
+
+        return {
+            "score": score,
+            "blocks_produced": block_count,
+            "expected_blocks": expected_blocks,
+            "production_ratio": actual_ratio,
+        }
+
+    async def _calculate_mempool_health_score(
+        self, db: Session, end_time: datetime
+    ) -> dict[str, Any]:
+        """Calculate mempool health based on pending transactions"""
+        # For now, return a default score since mempool metrics aren't fully implemented
+        return {
+            "score": 75,
+            "details": "Mempool metrics not fully implemented",
+            "pending_tx_count": 0,
+        }
+
+    async def _calculate_validator_performance_score(
+        self, db: Session, end_time: datetime
+    ) -> dict[str, Any]:
+        """Calculate validator performance based on MEV data"""
+        window = timedelta(hours=6)
+        start_time = end_time - window
+
+        mev_metrics = (
+            db.query(MEVMetric).filter(MEVMetric.timestamp.between(start_time, end_time)).all()
+        )
+
+        if not mev_metrics:
+            return {"score": 75, "details": "No validator performance data available"}
+
+        # Calculate builder diversity as proxy for validator decentralization
+        builders = [m.builder_pubkey for m in mev_metrics if m.builder_pubkey]
+        unique_builders = len(set(builders))
+        total_blocks = len(builders)
+
+        if total_blocks > 0:
+            diversity_ratio = unique_builders / min(total_blocks, 10)
+            score = min(100, diversity_ratio * 100)
+        else:
+            score = 75
+
+        return {
+            "score": score,
+            "unique_builders": unique_builders,
+            "total_blocks": total_blocks,
+            "diversity_ratio": diversity_ratio if total_blocks > 0 else 0,
+        }
+
+    def _generate_recommendations(
+        self, scores: dict[str, dict[str, Any]], anomalies: list[dict[str, Any]]
+    ) -> list[str]:
+        """Generate contextual recommendations based on scores and anomalies"""
+        recommendations = []
+
+        # Check individual component scores
+        for component, data in scores.items():
+            score = data.get("score", 100)
+            if score < 60:
+                if component == "gas_efficiency":
+                    recommendations.append(
+                        "High gas prices detected. Consider delaying non-urgent transactions."
+                    )
+                elif component == "network_stability":
+                    recommendations.append(
+                        "Network instability detected. Monitor block times closely."
+                    )
+                elif component == "mev_fairness":
+                    recommendations.append(
+                        "High MEV activity impacting users. Use private mempools when possible."
+                    )
+                elif component == "block_production":
+                    recommendations.append(
+                        "Block production below expected rate. Network may be congested."
+                    )
+
+        # Check for severe anomalies
+        severe_anomalies = [a for a in anomalies if a.get("severity") == "high"]
+        if severe_anomalies:
+            recommendations.append(
+                f"Detected {len(severe_anomalies)} severe anomalies. Check network status."
+            )
+
+        # If everything is good
+        if not recommendations:
+            overall_score = sum(self.weights[k] * v["score"] for k, v in scores.items())
+            if overall_score > 85:
+                recommendations.append("Network health is excellent. All systems normal.")
+            else:
+                recommendations.append("Network health is stable.")
+
+        return recommendations[:5]  # Limit to 5 recommendations
+
+    def _calculate_confidence_level(self, scores: dict[str, dict[str, Any]]) -> float:
+        """Calculate confidence level based on data availability"""
+        # Check how many components have valid scores
+        valid_scores = sum(
+            1
+            for data in scores.values()
+            if isinstance(data.get("score"), (int, float)) and data["score"] > 0
+        )
+
+        total_components = len(scores)
+
+        # Base confidence on data completeness
+        if total_components == 0:
+            return 0.0
+
+        data_completeness = valid_scores / total_components
+
+        # Additional factors affecting confidence
+        confidence_factors = []
+
+        # Check if we have sufficient data points in each component
+        for component, data in scores.items():
+            if "windows" in data:  # Has time-based analysis
+                confidence_factors.append(0.9)
+            elif "details" in data and "insufficient" in str(data.get("details", "")).lower():
+                confidence_factors.append(0.5)
+            else:
+                confidence_factors.append(0.8)
+
+        # Calculate overall confidence
+        avg_factor = (
+            sum(confidence_factors) / len(confidence_factors) if confidence_factors else 0.7
+        )
+        confidence = data_completeness * avg_factor * 100
+
+        return round(min(100, max(0, confidence)), 1)
+
+    def _get_dynamic_health_status(
+        self, overall_score: float, anomalies: list[dict[str, Any]]
+    ) -> str:
+        """Get dynamic health status based on score and anomalies"""
+        # Check for critical anomalies
+        critical_anomalies = [a for a in anomalies if a.get("severity") == "critical"]
+        high_anomalies = [a for a in anomalies if a.get("severity") == "high"]
+
+        # Adjust status based on anomalies
+        if critical_anomalies:
+            return "Critical - Immediate Attention Required"
+        elif high_anomalies and overall_score < 70:
+            return "Warning - Multiple Issues Detected"
+        elif overall_score >= 90:
+            return "Excellent"
+        elif overall_score >= 80:
+            return "Good"
+        elif overall_score >= 70:
+            return "Fair"
+        elif overall_score >= 60:
+            return "Degraded"
+        elif overall_score >= 50:
+            return "Poor"
+        else:
+            return "Critical"
+
+    def _calculate_trend(self, values: list[float]) -> str:
+        """Calculate trend direction from a series of values"""
+        if len(values) < 3:
+            return "stable"
+
+        # Use simple linear regression slope
+        x = np.arange(len(values))
+        slope, _ = np.polyfit(x, values, 1)
+
+        # Normalize slope by mean value
+        mean_val = np.mean(values)
+        if mean_val == 0:
+            return "stable"
+
+        normalized_slope = slope / mean_val
+
+        # Determine trend based on normalized slope
+        if normalized_slope > 0.01:
+            return "increasing"
+        elif normalized_slope < -0.01:
+            return "decreasing"
+        else:
+            return "stable"

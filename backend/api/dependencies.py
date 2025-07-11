@@ -1,5 +1,5 @@
 import os
-from typing import Any, Dict
+from typing import Any
 
 from fastapi import Depends, Request
 
@@ -11,8 +11,8 @@ rate_limiter = RateLimiter(os.getenv("REDIS_URL", "redis://localhost:6379"))
 
 
 async def verify_request(
-    request: Request, user_info: Dict[str, Any] = Depends(auth.verify_api_key)
-) -> Dict[str, Any]:
+    request: Request, user_info: dict[str, Any] = Depends(auth.verify_api_key)
+) -> dict[str, Any]:
     """Verify request with auth and rate limiting"""
     # Check rate limit based on user tier
     rate_limit_info = await rate_limiter.check_rate_limit(

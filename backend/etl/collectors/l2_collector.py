@@ -2,7 +2,7 @@ import asyncio
 import os
 import time
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 import httpx
 from web3 import Web3
@@ -65,7 +65,7 @@ class L2Collector(BaseCollector):
         # L2Beat API for additional metrics
         self.l2beat_client = httpx.AsyncClient(timeout=30.0)
 
-    async def collect(self) -> List[Dict[str, Any]]:
+    async def collect(self) -> list[dict[str, Any]]:
         """Collect metrics from all L2 networks"""
         metrics = []
 
@@ -89,7 +89,7 @@ class L2Collector(BaseCollector):
 
         return metrics
 
-    async def _collect_network_metrics(self, network: str) -> List[Dict[str, Any]]:
+    async def _collect_network_metrics(self, network: str) -> list[dict[str, Any]]:
         """Collect metrics from specific L2 network"""
         try:
             w3 = self.w3_connections[network]
@@ -137,17 +137,16 @@ class L2Collector(BaseCollector):
             metrics.append(l2_metric)
 
             # Get transaction costs comparison
-            cost_comparison = await self._calculate_transaction_costs(
-                network, gas_price
-            )
+            cost_comparison = await self._calculate_transaction_costs(network, gas_price)
             if cost_comparison:
                 metrics.append(cost_comparison)
 
             # Get sequencer health metrics
-            if self.networks[network]["type"] in ["optimistic_rollup", "zk_rollup"]:
-                sequencer_health = await self._check_sequencer_health(network)
-                if sequencer_health:
-                    metrics.append(sequencer_health)
+            # TODO: Phase 3 - Advanced rollup metrics
+            # if self.networks[network]["type"] in ["optimistic_rollup", "zk_rollup"]:
+            #     sequencer_health = await self._check_sequencer_health(network)
+            #     if sequencer_health:
+            #         metrics.append(sequencer_health)
 
             return metrics
 
@@ -174,7 +173,7 @@ class L2Collector(BaseCollector):
 
     async def _calculate_transaction_costs(
         self, network: str, gas_price: int
-    ) -> Optional[Dict[str, Any]]:
+    ) -> Optional[dict[str, Any]]:
         """Calculate transaction costs for common operations"""
         try:
             # Gas estimates for common operations
@@ -203,72 +202,101 @@ class L2Collector(BaseCollector):
             self.logger.error(f"Error calculating transaction costs: {e}")
             return None
 
-    async def _get_l2beat_data(self) -> List[Dict[str, Any]]:
-        """Get TVL and activity data from L2Beat"""
+    async def _get_l2beat_data(self) -> list[dict[str, Any]]:
+        """Get TVL data from DefiLlama (L2Beat alternative)"""
         try:
-            response = await self.l2beat_client.get("https://l2beat.com/api/tvl")
+            # DefiLlama has a free public API with L2 TVL data
+            response = await self.l2beat_client.get("https://api.llama.fi/v2/chains")
             response.raise_for_status()
             data = response.json()
 
             metrics = []
-            for project in data.get("projects", []):
-                if project["name"].lower() in self.networks:
+
+            # DefiLlama returns an array of chain data
+            # Map DefiLlama chain names to our network names
+            chain_mapping = {
+                "arbitrum": "arbitrum",
+                "optimism": "optimism",
+                "polygon": "polygon",
+                "base": "base",
+                "era": "zksync",  # zkSync Era
+                "scroll": "scroll",
+            }
+
+            # Calculate total L2 TVL for market share
+            l2_tvls = {}
+            for chain in data:
+                chain_name = chain.get("name", "").lower()
+                if chain_name in chain_mapping:
+                    l2_tvls[chain_mapping[chain_name]] = chain.get("tvl", 0)
+
+            total_l2_tvl = sum(l2_tvls.values())
+
+            # Process each chain
+            for chain in data:
+                chain_name = chain.get("name", "").lower()
+
+                if chain_name in chain_mapping:
+                    network_name = chain_mapping[chain_name]
+                    tvl_usd = chain.get("tvl", 0)
+
+                    # Calculate market share
+                    market_share = (tvl_usd / total_l2_tvl * 100) if total_l2_tvl > 0 else 0
+
                     metrics.append(
                         {
                             "metric_type": "l2_tvl",
                             "timestamp": datetime.utcnow(),
-                            "network": project["name"].lower(),
-                            "tvl_usd": project.get("tvl", {}).get("usd", 0),
-                            "tvl_eth": project.get("tvl", {}).get("eth", 0),
-                            "daily_tps": project.get("tps", 0),
-                            "market_share_percent": project.get("marketShare", 0),
+                            "network": network_name,
+                            "tvl_usd": tvl_usd,
+                            "tvl_eth": 0,  # DefiLlama doesn't provide ETH TVL
+                            "daily_tps": 0,  # Would need different endpoint
+                            "market_share_percent": market_share,
                         }
                     )
 
             return metrics
 
         except Exception as e:
-            self.logger.error(f"Error getting L2Beat data: {e}")
+            self.logger.error(f"Error getting L2 TVL data: {e}")
             return []
 
-    async def _get_rollup_specific_metrics(
-        self, network: str, w3: Web3
-    ) -> Dict[str, Any]:
+    async def _get_rollup_specific_metrics(self, network: str, w3: Web3) -> dict[str, Any]:
         """Get rollup-specific metrics like L1 data costs and state commitments"""
         metrics = {}
 
-        try:
-            if network in ["arbitrum", "optimism", "base"]:
-                # Optimistic rollup metrics
-                metrics["l1_data_submission_cost"] = await self._get_l1_data_cost(
-                    network
-                )
-                metrics["challenge_period_hours"] = (
-                    168 if network == "arbitrum" else 7 * 24
-                )
-                metrics["state_root_frequency"] = "hourly"
-            elif network in ["zksync", "scroll"]:
-                # ZK rollup metrics
-                metrics[
-                    "proof_generation_time"
-                ] = await self._get_proof_generation_time(network)
-                metrics["l1_verification_cost"] = await self._get_verification_cost(
-                    network
-                )
-                metrics["batch_size"] = await self._get_average_batch_size(network)
+        # try:
+        #     if network in ["arbitrum", "optimism", "base"]:
+        #         # Optimistic rollup metrics
+        #         metrics["l1_data_submission_cost"] = await self._get_l1_data_cost(
+        #             network
+        #         )
+        #         metrics["challenge_period_hours"] = (
+        #             168 if network == "arbitrum" else 7 * 24
+        #         )
+        #         metrics["state_root_frequency"] = "hourly"
+        #     elif network in ["zksync", "scroll"]:
+        #         # ZK rollup metrics
+        #         metrics[
+        #             "proof_generation_time"
+        #         ] = await self._get_proof_generation_time(network)
+        #         metrics["l1_verification_cost"] = await self._get_verification_cost(
+        #             network
+        #         )
+        #         metrics["batch_size"] = await self._get_average_batch_size(network)
 
-            # Common rollup metrics
-            metrics["l1_submission_frequency"] = await self._get_submission_frequency(
-                network
-            )
-            metrics["data_availability_cost"] = await self._get_da_cost(network)
+        #     # Common rollup metrics
+        #     metrics["l1_submission_frequency"] = await self._get_submission_frequency(
+        #         network
+        #     )
+        #     metrics["data_availability_cost"] = await self._get_da_cost(network)
 
-        except Exception as e:
-            self.logger.error(f"Error getting rollup metrics for {network}: {e}")
+        # except Exception as e:
+        #     self.logger.error(f"Error getting rollup metrics for {network}: {e}")
 
         return metrics
 
-    async def _check_sequencer_health(self, network: str) -> Optional[Dict[str, Any]]:
+    async def _check_sequencer_health(self, network: str) -> Optional[dict[str, Any]]:
         """Check sequencer health and decentralization metrics"""
         try:
             health_endpoints = {
@@ -298,9 +326,7 @@ class L2Collector(BaseCollector):
                 "network": network,
                 "sequencer_latency_ms": latency,
                 "sequencer_uptime": response.status_code == 200,
-                "decentralization_score": await self._calculate_decentralization_score(
-                    network
-                ),
+                "decentralization_score": await self._calculate_decentralization_score(network),
             }
 
         except Exception as e:

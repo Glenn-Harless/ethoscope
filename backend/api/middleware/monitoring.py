@@ -1,5 +1,5 @@
 import time
-from typing import Callable
+from collections.abc import Callable
 
 from fastapi import Request, Response
 from prometheus_client import Counter, Gauge, Histogram, generate_latest
@@ -62,12 +62,8 @@ class MetricsMiddleware(BaseHTTPMiddleware):
             method = request.method
             status = response.status_code
 
-            http_requests_total.labels(
-                method=method, endpoint=endpoint, status_code=status
-            ).inc()
-            http_request_duration_seconds.labels(
-                method=method, endpoint=endpoint
-            ).observe(duration)
+            http_requests_total.labels(method=method, endpoint=endpoint, status_code=status).inc()
+            http_request_duration_seconds.labels(method=method, endpoint=endpoint).observe(duration)
 
             return response
 

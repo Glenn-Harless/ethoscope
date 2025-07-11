@@ -22,6 +22,7 @@ class MEVMetric(Base):
     gas_used = Column(BigInteger)
     gas_limit = Column(BigInteger)
     gas_utilization = Column(Float)  # Percentage
+    mev_gas_price_gwei = Column(Float)  # MEV gas price in Gwei
     relay_source = Column(String(50))
     block_hash = Column(String(66))
     parent_hash = Column(String(66))

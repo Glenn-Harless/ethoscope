@@ -1,0 +1,88 @@
+# Ruff configuration - replaces black, flake8, and isort
+
+# Same as Black
+line-length = 100
+indent-width = 4
+
+# Python version
+target-version = "py311"
+
+[lint]
+# Enable these rule sets (replaces flake8 and more)
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "N",    # pep8-naming
+    "UP",   # pyupgrade
+    "B",    # flake8-bugbear
+    "C4",   # flake8-comprehensions
+    "DTZ",  # flake8-datetimez
+    "RUF",  # Ruff-specific rules
+]
+
+# Ignore specific rules
+ignore = [
+    "E203",  # Whitespace before ':' (conflicts with black)
+    "B008",  # Do not perform function calls in argument defaults
+    "RUF001", # String contains ambiguous character
+    "RUF002", # Docstring contains ambiguous character
+    "RUF003", # Comment contains ambiguous character
+    "DTZ003", # Don't force timezone-aware utcnow
+    "DTZ006", # Don't force timezone-aware fromtimestamp
+    "UP007",  # Optional[X] is fine, don't force X | None
+    "RUF006", # asyncio.create_task is fine without storing reference
+    "RUF013", # Implicit Optional is fine
+    "N806",   # Variable names in functions (IQR is fine)
+    "N805",   # First argument doesn't always need to be self
+    "B007",   # Unused loop variable is sometimes OK
+    "C401",   # Generator comprehensions are fine
+    "B904",   # Don't force raise from
+    "RUF005", # Consider using unpacking - concatenation is fine
+    "UP038",  # isinstance with tuple is fine
+]
+
+# Allow autofix for all enabled rules
+fixable = ["ALL"]
+unfixable = []
+
+# Exclude directories
+exclude = [
+    ".git",
+    ".ruff_cache",
+    ".venv",
+    "__pycache__",
+    "dist",
+    "build",
+    "*.egg-info",
+    ".pytest_cache",
+    ".mypy_cache",
+    "alembic/versions",
+]
+
+# Per-file ignores
+[lint.per-file-ignores]
+"__init__.py" = ["F401"]  # Allow unused imports in __init__ files
+"tests/*" = ["S101"]      # Allow assert in tests
+"scripts/*" = ["E402"]    # Allow imports after path modifications
+"alembic/versions/*" = ["E501"]  # Allow long lines in auto-generated migrations
+
+[lint.isort]
+# Make isort compatible with black
+known-first-party = ["backend", "scripts"]
+combine-as-imports = true
+force-wrap-aliases = false
+
+[format]
+# Like Black, use double quotes for strings
+quote-style = "double"
+
+# Like Black, indent with spaces
+indent-style = "space"
+
+# Like Black, respect magic trailing commas
+skip-magic-trailing-comma = false
+
+# Like Black, automatically detect the appropriate line ending
+line-ending = "auto"

@@ -56,9 +56,7 @@ async def test_websocket_connection():
         assert data["status"] == "connected"
 
         # Test subscription
-        websocket.send_json(
-            {"action": "subscribe", "channels": ["gas_prices", "network_health"]}
-        )
+        websocket.send_json({"action": "subscribe", "channels": ["gas_prices", "network_health"]})
 
         response = websocket.receive_json()
         assert response["type"] == "subscribed"

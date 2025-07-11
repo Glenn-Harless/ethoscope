@@ -8,10 +8,7 @@ class CollectorConfig(BaseModel):
     """Configuration for data collectors"""
 
     alchemy_api_key: str
-    alchemy_api_url: Optional[str]
-    collection_interval: int = Field(
-        default=15, description="Collection interval in seconds"
-    )
+    collection_interval: int = Field(default=15, description="Collection interval in seconds")
     batch_size: int = Field(default=100, description="Batch size for processing")
     retry_attempts: int = Field(default=3, description="Number of retry attempts")
     retry_delay: int = Field(default=5, description="Delay between retries in seconds")
@@ -30,9 +27,7 @@ class RedisConfig(BaseModel):
     """Redis configuration"""
 
     url: str
-    decode_responses: bool = Field(
-        default=True, description="Decode responses to strings"
-    )
+    decode_responses: bool = Field(default=True, description="Decode responses to strings")
     max_connections: int = Field(default=50, description="Maximum connections")
 
 
@@ -41,7 +36,6 @@ class Settings(BaseSettings):
 
     # API Keys
     alchemy_api_key: str = Field(..., env="ALCHEMY_API_KEY")
-    alchemy_api_url: str = Field(..., env="ALCHEMY_API_URL")
     dune_api_key: Optional[str] = Field(None, env="DUNE_API_KEY")
     flashbots_api_key: Optional[str] = Field(None, env="FLASHBOTS_API_KEY")
 
@@ -63,7 +57,6 @@ class Settings(BaseSettings):
     def collector(self) -> CollectorConfig:
         return CollectorConfig(
             alchemy_api_key=self.alchemy_api_key,
-            alchemy_api_url=self.alchemy_api_url,
         )
 
     @property

@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from fastapi import APIRouter, Depends
 
@@ -8,7 +8,7 @@ router = APIRouter()
 
 
 @router.get("/stats")
-async def get_admin_stats(user_info: Dict[str, Any] = Depends(verify_request)):
+async def get_admin_stats(user_info: dict[str, Any] = Depends(verify_request)):
     """Get admin statistics (requires admin permissions)"""
     # Check admin permissions
     if "admin" not in user_info.get("permissions", []):
@@ -22,7 +22,7 @@ async def get_admin_stats(user_info: Dict[str, Any] = Depends(verify_request)):
 
 
 @router.post("/clear-cache")
-async def clear_cache(user_info: Dict[str, Any] = Depends(verify_request)):
+async def clear_cache(user_info: dict[str, Any] = Depends(verify_request)):
     """Clear all caches (requires admin permissions)"""
     if "admin" not in user_info.get("permissions", []):
         return {"error": "Admin access required"}

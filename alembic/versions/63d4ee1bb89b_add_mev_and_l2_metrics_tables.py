@@ -5,7 +5,8 @@ Revises: 15715f86a411
 Create Date: 2025-07-08 21:07:33.969514
 
 """
-from typing import Sequence, Union
+from collections.abc import Sequence
+from typing import Union
 
 import sqlalchemy as sa
 
@@ -98,9 +99,7 @@ def upgrade() -> None:
         sa.Column("parent_hash", sa.String(length=66), nullable=True),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(
-        "idx_mev_metrics_builder", "mev_metrics", ["builder_pubkey"], unique=False
-    )
+    op.create_index("idx_mev_metrics_builder", "mev_metrics", ["builder_pubkey"], unique=False)
     op.create_index("idx_mev_metrics_slot", "mev_metrics", ["slot"], unique=False)
     op.create_index(
         "idx_mev_metrics_timestamp_block",
@@ -115,9 +114,7 @@ def upgrade() -> None:
         unique=False,
     )
     op.create_index(op.f("ix_mev_metrics_slot"), "mev_metrics", ["slot"], unique=False)
-    op.create_index(
-        op.f("ix_mev_metrics_timestamp"), "mev_metrics", ["timestamp"], unique=False
-    )
+    op.create_index(op.f("ix_mev_metrics_timestamp"), "mev_metrics", ["timestamp"], unique=False)
     # ### end Alembic commands ###
 
 
@@ -133,16 +130,10 @@ def downgrade() -> None:
     op.drop_table("mev_metrics")
     op.drop_index(op.f("ix_mev_boost_stats_timestamp"), table_name="mev_boost_stats")
     op.drop_table("mev_boost_stats")
-    op.drop_index(
-        op.f("ix_mev_block_analysis_timestamp"), table_name="mev_block_analysis"
-    )
-    op.drop_index(
-        op.f("ix_mev_block_analysis_block_number"), table_name="mev_block_analysis"
-    )
+    op.drop_index(op.f("ix_mev_block_analysis_timestamp"), table_name="mev_block_analysis")
+    op.drop_index(op.f("ix_mev_block_analysis_block_number"), table_name="mev_block_analysis")
     op.drop_index("idx_mev_block_analysis_type", table_name="mev_block_analysis")
-    op.drop_index(
-        "idx_mev_block_analysis_timestamp_block", table_name="mev_block_analysis"
-    )
+    op.drop_index("idx_mev_block_analysis_timestamp_block", table_name="mev_block_analysis")
     op.drop_index("idx_mev_block_analysis_intensity", table_name="mev_block_analysis")
     op.drop_table("mev_block_analysis")
     # ### end Alembic commands ###

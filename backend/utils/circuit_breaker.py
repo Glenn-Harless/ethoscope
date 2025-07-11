@@ -1,8 +1,9 @@
 import asyncio
 import logging
 import time
+from collections.abc import Callable
 from functools import wraps
-from typing import Any, Callable
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -42,8 +43,7 @@ class CircuitBreaker:
     def _should_attempt_reset(self) -> bool:
         """Check if enough time has passed to try again"""
         return (
-            self.last_failure_time
-            and time.time() - self.last_failure_time >= self.recovery_timeout
+            self.last_failure_time and time.time() - self.last_failure_time >= self.recovery_timeout
         )
 
     def _on_success(self):
@@ -58,9 +58,7 @@ class CircuitBreaker:
 
         if self.failure_count >= self.failure_threshold:
             self.state = "open"
-            logger.warning(
-                f"Circuit breaker opened after {self.failure_count} failures"
-            )
+            logger.warning(f"Circuit breaker opened after {self.failure_count} failures")
 
 
 def circuit_breaker(failure_threshold: int = 5, recovery_timeout: int = 60):

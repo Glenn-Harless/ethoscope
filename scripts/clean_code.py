@@ -2,17 +2,16 @@
 """
 Clean and format code to pass pre-commit hooks.
 
-This script runs various code formatters and linters to ensure
-all files pass pre-commit checks before committing.
+This script runs Ruff to format and fix code issues,
+ensuring all files pass pre-commit checks before committing.
 """
 
 import subprocess
 import sys
 from pathlib import Path
-from typing import List, Tuple
 
 
-def run_command(cmd: List[str], description: str) -> Tuple[int, str, str]:
+def run_command(cmd: list[str], description: str) -> tuple[int, str, str]:
     """Run a command and return the result."""
     print(f"\n🔧 {description}...")
     try:
@@ -22,7 +21,7 @@ def run_command(cmd: List[str], description: str) -> Tuple[int, str, str]:
         return 1, "", f"Command not found: {cmd[0]}"
 
 
-def find_python_files() -> List[Path]:
+def find_python_files() -> list[Path]:
     """Find all Python files in the project."""
     root = Path(__file__).parent.parent
     python_files = []
@@ -43,24 +42,22 @@ def find_python_files() -> List[Path]:
 
 def main():
     """Main cleaning function."""
-    print("🧹 Starting code cleanup process...")
+    print("🧹 Starting code cleanup process with Ruff...")
 
     # Check if we're in a poetry environment
-    in_poetry = (
-        subprocess.run(["poetry", "env", "info"], capture_output=True).returncode == 0
-    )
+    in_poetry = subprocess.run(["poetry", "env", "info"], capture_output=True).returncode == 0
 
     prefix = ["poetry", "run"] if in_poetry else []
 
     # Track if any step fails
     has_errors = False
 
-    # 1. Remove trailing whitespace
-    print("\n📝 Removing trailing whitespace...")
+    # 1. Remove trailing whitespace and ensure files end with newline
+    print("\n📝 Fixing file endings...")
     python_files = find_python_files()
     for file in python_files:
         try:
-            with open(file, "r") as f:
+            with open(file) as f:
                 content = f.read()
 
             # Remove trailing whitespace from each line
@@ -75,118 +72,65 @@ def main():
         except Exception as e:
             print(f"  ⚠️  Error processing {file}: {e}")
 
-    # 2. Run isort to sort imports
+    # 2. Run ruff check with auto-fix for linting issues
     returncode, stdout, stderr = run_command(
-        prefix + ["isort", "--profile", "black", "backend", "scripts", "tests"],
-        "Sorting imports with isort",
+        prefix + ["ruff", "check", "--fix", "backend", "scripts", "tests", "alembic"],
+        "Running Ruff linter with auto-fix",
     )
     if returncode != 0:
-        print(f"  ⚠️  isort warnings: {stderr}")
+        print(f"  ⚠️  Ruff found issues that couldn't be auto-fixed:\n{stdout}")
+        has_errors = True
     else:
-        print("  ✅ Imports sorted")
+        print("  ✅ Linting issues fixed")
 
-    # 3. Run black for formatting
+    # 3. Run ruff format for code formatting
     returncode, stdout, stderr = run_command(
-        prefix + ["black", "backend", "scripts", "tests"], "Formatting code with black"
+        prefix + ["ruff", "format", "backend", "scripts", "tests", "alembic"],
+        "Formatting code with Ruff",
     )
     if returncode != 0:
-        print(f"  ❌ Black failed: {stderr}")
+        print(f"  ❌ Ruff format failed: {stderr}")
         has_errors = True
     else:
         print("  ✅ Code formatted")
 
-    # 4. Run autoflake to remove unused imports
+    # 4. Check if there are any remaining issues
     returncode, stdout, stderr = run_command(
-        prefix
-        + [
-            "autoflake",
-            "--in-place",
-            "--remove-all-unused-imports",
-            "--remove-unused-variables",
-            "--recursive",
-            "backend",
-            "scripts",
-            "tests",
-        ],
-        "Removing unused imports with autoflake",
-    )
-    if returncode == 127:  # Command not found
-        print("  ℹ️  autoflake not installed, installing...")
-        run_command(
-            ["poetry", "add", "--group", "dev", "autoflake"], "Installing autoflake"
-        )
-        # Retry after installation
-        returncode, stdout, stderr = run_command(
-            prefix
-            + [
-                "autoflake",
-                "--in-place",
-                "--remove-all-unused-imports",
-                "--remove-unused-variables",
-                "--recursive",
-                "backend",
-                "scripts",
-                "tests",
-            ],
-            "Retrying autoflake",
-        )
-
-    if returncode != 0 and returncode != 127:
-        print(f"  ⚠️  autoflake warnings: {stderr}")
-    else:
-        print("  ✅ Unused imports removed")
-
-    # 5. Run flake8 to check for issues
-    returncode, stdout, stderr = run_command(
-        prefix + ["flake8", "backend", "scripts", "tests"],
-        "Checking code style with flake8",
+        prefix + ["ruff", "check", "backend", "scripts", "tests", "alembic"],
+        "Final Ruff check",
     )
     if returncode != 0:
-        print(f"  ⚠️  flake8 found issues:\n{stdout}")
+        print(f"  ⚠️  Remaining Ruff issues:\n{stdout}")
         has_errors = True
-    else:
-        print("  ✅ Code style check passed")
 
-    # 6. Fix common flake8 issues
-    if has_errors:
-        print("\n🔨 Attempting to fix common issues...")
+    # 5. Fix common import issues in special files
+    print("\n🔨 Fixing special file imports...")
+    files_with_model_imports = [
+        Path("alembic/env.py"),
+    ]
 
-        # Add noqa comments for specific imports that need to be kept
-        files_with_model_imports = [
-            Path("alembic/env.py"),
-        ]
+    for file in files_with_model_imports:
+        if file.exists():
+            try:
+                with open(file) as f:
+                    content = f.read()
 
-        for file in files_with_model_imports:
-            if file.exists():
-                try:
-                    with open(file, "r") as f:
-                        content = f.read()
+                # Add noqa comments to model imports if not already present
+                lines = content.splitlines()
+                for i, line in enumerate(lines):
+                    if "from backend.models.metrics import" in line and "noqa" not in line:
+                        lines[i] = line.rstrip() + "  # noqa: F401"
+                    elif "from backend.etl.config import settings" in line and "noqa" not in line:
+                        lines[i] = line.rstrip() + "  # noqa: E402"
+                    elif "from backend.models.database import Base" in line and "noqa" not in line:
+                        lines[i] = line.rstrip() + "  # noqa: E402"
 
-                    # Add noqa comments to model imports if not already present
-                    lines = content.splitlines()
-                    for i, line in enumerate(lines):
-                        if (
-                            "from backend.models.metrics import" in line
-                            and "noqa" not in line
-                        ):
-                            lines[i] = line.rstrip() + "  # noqa: F401"
-                        elif (
-                            "from backend.etl.config import settings" in line
-                            and "noqa" not in line
-                        ):
-                            lines[i] = line.rstrip() + "  # noqa: E402"
-                        elif (
-                            "from backend.models.database import Base" in line
-                            and "noqa" not in line
-                        ):
-                            lines[i] = line.rstrip() + "  # noqa: E402"
+                with open(file, "w") as f:
+                    f.write("\n".join(lines) + "\n")
+            except Exception as e:
+                print(f"  ⚠️  Error fixing {file}: {e}")
 
-                    with open(file, "w") as f:
-                        f.write("\n".join(lines) + "\n")
-                except Exception as e:
-                    print(f"  ⚠️  Error fixing {file}: {e}")
-
-    # 7. Run mypy for type checking (informational only)
+    # 6. Run mypy for type checking (informational only)
     print("\n📊 Running type checker (informational)...")
     returncode, stdout, stderr = run_command(
         prefix + ["mypy", "--ignore-missing-imports", "backend"],
@@ -198,14 +142,21 @@ def main():
     else:
         print("  ✅ Type checking passed")
 
-    # 8. Final check with pre-commit
+    # 7. Final check with pre-commit
     print("\n🏁 Running pre-commit hooks...")
     returncode, stdout, stderr = run_command(
         prefix + ["pre-commit", "run", "--all-files"], "Final pre-commit check"
     )
     if returncode != 0:
         print(f"  ⚠️  Some pre-commit hooks failed:\n{stdout}")
-        has_errors = True
+        print("\n  Attempting to auto-fix remaining issues...")
+        # Run pre-commit again with auto-fix
+        returncode2, stdout2, stderr2 = run_command(
+            prefix + ["pre-commit", "run", "--all-files"],
+            "Second pre-commit run",
+        )
+        if returncode2 != 0:
+            has_errors = True
     else:
         print("  ✅ All pre-commit hooks passed!")
 

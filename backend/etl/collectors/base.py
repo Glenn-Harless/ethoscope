@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +14,7 @@ class BaseCollector(ABC):
         self.logger = logging.getLogger(f"{__name__}.{name}")
 
     @abstractmethod
-    async def collect(self) -> List[Dict[str, Any]]:
+    async def collect(self) -> list[dict[str, Any]]:
         """Collect data from source"""
 
     async def run_collection(self, interval: int = 60):

@@ -3,7 +3,9 @@ from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from backend.etl.processors.health_score_calculator import NetworkHealthCalculator
+from backend.etl.processors.health_score_calculator import (
+    DynamicNetworkHealthCalculator as NetworkHealthCalculator,
+)
 from backend.models.database import get_db
 from backend.models.metrics import NetworkHealthScore
 
@@ -15,15 +17,11 @@ async def get_network_health_score(db: Session = Depends(get_db)):
     """Get current network health score"""
     # Try to get recent calculated score
     recent_score = (
-        db.query(NetworkHealthScore)
-        .order_by(NetworkHealthScore.timestamp.desc())
-        .first()
+        db.query(NetworkHealthScore).order_by(NetworkHealthScore.timestamp.desc()).first()
     )
 
     # If no recent score or it's older than 5 minutes, calculate new one
-    if not recent_score or recent_score.timestamp < datetime.utcnow() - timedelta(
-        minutes=5
-    ):
+    if not recent_score or recent_score.timestamp < datetime.utcnow() - timedelta(minutes=5):
         calculator = NetworkHealthCalculator()
         health_data = await calculator.calculate_health_score(db)
 

@@ -1,6 +1,6 @@
 import hashlib
 import json
-from typing import Callable
+from collections.abc import Callable
 
 from redis import Redis
 

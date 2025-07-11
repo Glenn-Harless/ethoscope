@@ -1,7 +1,7 @@
 import logging
 from asyncio import Semaphore
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 import backoff
 import httpx
@@ -23,11 +23,11 @@ class FlashbotsCollector(BaseCollector):
         # Now using MEV-Boost relay APIs for data
         self.relay_urls = {
             "flashbots": "https://boost-relay.flashbots.net",
-            "ultra_sound": "https://relay.ultrasound.money",
+            # "ultra_sound": "https://relay.ultrasound.money",
             "bloxroute_max": "https://bloxroute.max-profit.blxrbdn.com",
-            "bloxroute_ethical": "https://bloxroute.ethical.blxrbdn.com",
-            "blocknative": "https://builder-relay-mainnet.blocknative.com",
-            "manifold": "https://mainnet-relay.securerpc.com",
+            # "bloxroute_ethical": "https://bloxroute.ethical.blxrbdn.com",
+            # "blocknative": "https://builder-relay-mainnet.blocknative.com",
+            # "manifold": "https://mainnet-relay.securerpc.com",
             "agnostic": "https://agnostic-relay.net",
         }
         self.client = httpx.AsyncClient(timeout=30.0)
@@ -40,7 +40,7 @@ class FlashbotsCollector(BaseCollector):
         self.connection_pool = Semaphore(10)  # Limit concurrent connections
         self.request_cache = TTLCache(maxsize=1000, ttl=60)
 
-    async def collect(self) -> List[Dict[str, Any]]:
+    async def collect(self) -> list[dict[str, Any]]:
         """Collect MEV metrics from relay APIs"""
         metrics = []
 
@@ -74,18 +74,17 @@ class FlashbotsCollector(BaseCollector):
 
         return metrics
 
-    async def _get_relay_blocks(self) -> List[Dict[str, Any]]:
+    async def _get_relay_blocks(self) -> list[dict[str, Any]]:
         """Get recent blocks from MEV-Boost relays"""
         all_blocks = []
 
         for relay_name, relay_url in self.relay_urls.items():
             try:
                 # Use the proposer_payload_delivered endpoint
-                endpoint = (
-                    f"{relay_url}/relay/v1/data/bidtraces/proposer_payload_delivered"
-                )
+                endpoint = f"{relay_url}/relay/v1/data/bidtraces/proposer_payload_delivered"
                 response = await self.client.get(
-                    endpoint, params={"limit": 100}  # Get last 100 blocks per relay
+                    endpoint,
+                    params={"limit": 100},  # Get last 100 blocks per relay
                 )
 
                 if response.status_code == 200:
@@ -102,9 +101,7 @@ class FlashbotsCollector(BaseCollector):
         all_blocks.sort(key=lambda x: int(x.get("block_number", 0)), reverse=True)
         return all_blocks
 
-    async def _process_relay_block(
-        self, block: Dict[str, Any]
-    ) -> Optional[Dict[str, Any]]:
+    async def _process_relay_block(self, block: dict[str, Any]) -> Optional[dict[str, Any]]:
         """Process relay block data for MEV metrics"""
         try:
             # Extract data from MEV-Boost relay response format
@@ -141,18 +138,14 @@ class FlashbotsCollector(BaseCollector):
             self.logger.error(f"Error processing Flashbots block: {e}")
             return None
 
-    async def _analyze_block_mev_characteristics(
-        self, block: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    async def _analyze_block_mev_characteristics(self, block: dict[str, Any]) -> dict[str, Any]:
         """Analyze MEV characteristics from block-level data"""
         value_eth = int(block.get("value", 0)) / 1e18
         gas_used = int(block.get("gas_used", 0))
         gas_limit = int(block.get("gas_limit", 1))
 
         return {
-            "mev_intensity": (
-                "high" if value_eth > 5 else "medium" if value_eth > 1 else "low"
-            ),
+            "mev_intensity": ("high" if value_eth > 5 else "medium" if value_eth > 1 else "low"),
             "value_eth": value_eth,
             "gas_efficiency": gas_used / gas_limit if gas_limit > 0 else 0,
             "builder": block.get("builder_pubkey", ""),
@@ -177,7 +170,7 @@ class FlashbotsCollector(BaseCollector):
     # available from relay APIs. They're kept here as documentation for
     # future implementation with additional data sources
 
-    def _get_mev_analysis_options(self) -> Dict[str, str]:
+    def _get_mev_analysis_options(self) -> dict[str, str]:
         """Document options for implementing MEV analysis"""
         return {
             "option_1": "Connect to Ethereum node for full block data",
@@ -185,12 +178,11 @@ class FlashbotsCollector(BaseCollector):
             "option_3": "Query Dune Analytics API for pre-processed MEV data",
             "option_4": "Use Flashbots Bundle API for bundle simulation",
             "current_limitation": (
-                "Relay APIs only provide block-level MEV revenue, "
-                "not transaction details"
+                "Relay APIs only provide block-level MEV revenue, " "not transaction details"
             ),
         }
 
-    async def _get_builder_dominance(self) -> Dict[str, float]:
+    async def _get_builder_dominance(self) -> dict[str, float]:
         """Calculate builder market share"""
         # Get latest slot from the most recent block
         latest_blocks = await self._get_relay_blocks()
@@ -220,13 +212,12 @@ class FlashbotsCollector(BaseCollector):
 
         # Calculate market share
         market_share = {
-            builder: (count / total_blocks) * 100
-            for builder, count in builder_blocks.items()
+            builder: (count / total_blocks) * 100 for builder, count in builder_blocks.items()
         }
 
         return market_share
 
-    async def _analyze_private_mempool_usage(self) -> Dict[str, Any]:
+    async def _analyze_private_mempool_usage(self) -> dict[str, Any]:
         """Analyze private mempool and order flow auction usage"""
         # This would integrate with MEV-Share API and other private pools
         private_metrics = {
@@ -244,7 +235,7 @@ class FlashbotsCollector(BaseCollector):
 
         return private_metrics
 
-    async def _get_mev_boost_stats(self) -> Optional[Dict[str, Any]]:
+    async def _get_mev_boost_stats(self) -> Optional[dict[str, Any]]:
         """Get MEV-Boost aggregate statistics"""
         try:
             # Aggregate data from all relays collected
@@ -276,16 +267,14 @@ class FlashbotsCollector(BaseCollector):
             self.logger.error(f"Error getting MEV-Boost stats: {e}")
             return None
 
-    def _get_top_builder(self, blocks: List[Dict]) -> str:
+    def _get_top_builder(self, blocks: list[dict]) -> str:
         """Identify top builder by block count"""
         builder_counts = {}
         for block in blocks:
             builder = block.get("builder_pubkey", "unknown")
             builder_counts[builder] = builder_counts.get(builder, 0) + 1
 
-        return (
-            max(builder_counts, key=builder_counts.get) if builder_counts else "unknown"
-        )
+        return max(builder_counts, key=builder_counts.get) if builder_counts else "unknown"
 
     async def close(self):
         """Close HTTP client"""
@@ -293,7 +282,7 @@ class FlashbotsCollector(BaseCollector):
 
     @circuit_breaker(failure_threshold=5, recovery_timeout=60)
     @backoff.on_exception(backoff.expo, httpx.HTTPError, max_tries=3)
-    async def _get_flashbots_blocks(self) -> List[Dict[str, Any]]:
+    async def _get_flashbots_blocks(self) -> list[dict[str, Any]]:
         """Get Flashbots blocks with retry and circuit breaker"""
         async with self.connection_pool:
             # Check cache first

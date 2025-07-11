@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Optional
+from typing import Optional
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -44,7 +44,7 @@ class NetworkHealthResponse(BaseModel):
     mev_impact_score: float = Field(..., ge=0, le=100)
     stability_score: float = Field(..., ge=0, le=100)
     health_status: str
-    recommendations: List[str]
+    recommendations: list[str]
 
 
 class MEVImpactResponse(BaseModel):

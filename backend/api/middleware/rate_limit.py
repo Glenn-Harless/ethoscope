@@ -1,5 +1,5 @@
 import time
-from typing import Dict, Optional
+from typing import Optional
 
 import redis
 from fastapi import HTTPException, Request
@@ -19,7 +19,7 @@ class RateLimiter:
 
     async def check_rate_limit(
         self, request: Request, tier: str = "default", identifier: Optional[str] = None
-    ) -> Dict[str, int]:
+    ) -> dict[str, int]:
         """Check and update rate limit"""
         # Get identifier (API key or IP)
         if not identifier:

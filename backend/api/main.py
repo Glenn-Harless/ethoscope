@@ -66,9 +66,7 @@ async def update_health_metrics():
             # Get latest health score
             db = SessionLocal()
             health_score = (
-                db.query(NetworkHealthScore)
-                .order_by(NetworkHealthScore.timestamp.desc())
-                .first()
+                db.query(NetworkHealthScore).order_by(NetworkHealthScore.timestamp.desc()).first()
             )
             if health_score:
                 health_score_gauge.set(health_score.overall_score)

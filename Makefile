@@ -98,15 +98,15 @@ test-cov:
 
 lint:
 	@echo "$(BLUE)Running linters...$(NC)"
-	poetry run flake8 backend/
+	poetry run ruff check backend/
+	poetry run ruff format --check backend/
 	poetry run mypy backend/
-	poetry run black --check backend/
 	@echo "$(GREEN)✓ All checks passed$(NC)"
 
 format:
 	@echo "$(BLUE)Formatting code...$(NC)"
-	poetry run black backend/
-	poetry run isort backend/
+	poetry run ruff check --fix backend/
+	poetry run ruff format backend/
 	@echo "$(GREEN)✓ Code formatted$(NC)"
 
 clean-code:

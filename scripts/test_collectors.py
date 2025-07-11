@@ -5,8 +5,8 @@ from pathlib import Path
 # Add parent directory to path before imports
 sys.path.append(str(Path(__file__).parent.parent))
 
-from backend.etl.collectors.flashbots_collector import FlashbotsCollector  # noqa: E402
-from backend.etl.collectors.l2_collector import L2Collector  # noqa: E402
+from backend.etl.collectors.flashbots_collector import FlashbotsCollector
+from backend.etl.collectors.l2_collector import L2Collector
 
 
 async def test_collectors():

@@ -1,6 +1,6 @@
 import os
 from datetime import datetime, timedelta
-from typing import List, Optional
+from typing import Optional
 
 import redis
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
@@ -18,7 +18,7 @@ redis_client = redis.from_url(os.getenv("REDIS_URL", "redis://localhost:6379"))
 cache = MetricsCache(redis_client)
 
 
-@router.get("/gas", response_model=List[GasMetricResponse])
+@router.get("/gas", response_model=list[GasMetricResponse])
 async def get_gas_metrics(
     request: Request,
     db: Session = Depends(get_db),
@@ -35,9 +35,7 @@ async def get_gas_metrics(
         query = query.filter(GasMetric.timestamp <= end_time)
     else:
         # Default to last 24 hours if no time range specified
-        query = query.filter(
-            GasMetric.timestamp >= datetime.utcnow() - timedelta(hours=24)
-        )
+        query = query.filter(GasMetric.timestamp >= datetime.utcnow() - timedelta(hours=24))
 
     metrics = query.order_by(GasMetric.timestamp.desc()).limit(limit).all()
     return metrics
@@ -60,9 +58,7 @@ async def get_latest_gas_price(db: Session = Depends(get_db)):
 
 
 @router.get("/gas/percentiles")
-async def get_gas_percentiles(
-    db: Session = Depends(get_db), hours: int = Query(1, ge=1, le=24)
-):
+async def get_gas_percentiles(db: Session = Depends(get_db), hours: int = Query(1, ge=1, le=24)):
     """Get gas price percentiles over specified hours"""
     start_time = datetime.utcnow() - timedelta(hours=hours)
 
@@ -93,7 +89,7 @@ async def get_gas_percentiles(
     return {"message": "Percentile data not yet available"}
 
 
-@router.get("/blocks", response_model=List[BlockMetricResponse])
+@router.get("/blocks", response_model=list[BlockMetricResponse])
 async def get_block_metrics(
     db: Session = Depends(get_db),
     start_block: Optional[int] = Query(None),

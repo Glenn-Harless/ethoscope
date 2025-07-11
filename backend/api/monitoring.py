@@ -1,5 +1,5 @@
 import time
-from typing import Callable
+from collections.abc import Callable
 
 from fastapi import Request, Response
 from prometheus_client import Counter, Gauge, Histogram
@@ -17,13 +17,9 @@ request_duration = Histogram(
     ["method", "endpoint"],
 )
 
-active_connections = Gauge(
-    "ethoscope_websocket_connections", "Active WebSocket connections"
-)
+active_connections = Gauge("ethoscope_websocket_connections", "Active WebSocket connections")
 
-health_score_gauge = Gauge(
-    "ethoscope_network_health_score", "Current network health score"
-)
+health_score_gauge = Gauge("ethoscope_network_health_score", "Current network health score")
 
 
 class MetricsMiddleware:
@@ -44,8 +40,6 @@ class MetricsMiddleware:
             status=response.status_code,
         ).inc()
 
-        request_duration.labels(
-            method=request.method, endpoint=request.url.path
-        ).observe(duration)
+        request_duration.labels(method=request.method, endpoint=request.url.path).observe(duration)
 
         return response

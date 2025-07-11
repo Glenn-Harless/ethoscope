@@ -24,9 +24,7 @@ class L2NetworkMetric(Base):
     transaction_count = Column(Integer)
     block_time = Column(BigInteger)
 
-    __table_args__ = (
-        Index("idx_l2_metrics_network_timestamp", "network", "timestamp"),
-    )
+    __table_args__ = (Index("idx_l2_metrics_network_timestamp", "network", "timestamp"),)
 
 
 class L2TransactionCost(Base):
