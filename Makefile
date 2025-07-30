@@ -59,6 +59,11 @@ setup: check-env
 	@sleep 5
 	poetry run alembic upgrade head
 	@echo "$(GREEN)✓ Database migrations complete$(NC)"
+	@echo "$(YELLOW)Setting up TimescaleDB hypertables...$(NC)"
+	docker exec ethoscope-postgres-1 psql -U ethoscope -d ethoscope -f /docker-entrypoint-initdb.d/setup_hypertables.sql || \
+		(docker cp ./scripts/setup_timescale.sql ethoscope-postgres-1:/tmp/setup_hypertables.sql && \
+		 docker exec ethoscope-postgres-1 psql -U ethoscope -d ethoscope -f /tmp/setup_hypertables.sql)
+	@echo "$(GREEN)✓ TimescaleDB hypertables configured$(NC)"
 	@echo "$(YELLOW)Setting up pre-commit hooks...$(NC)"
 	poetry run pre-commit install
 	@echo "$(GREEN)✓ Pre-commit hooks installed$(NC)"
