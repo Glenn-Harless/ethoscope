@@ -1,11 +1,23 @@
 -- Enable TimescaleDB extension
 CREATE EXTENSION IF NOT EXISTS timescaledb;
 
--- Convert tables to hypertables
-SELECT create_hypertable('block_metrics', 'block_timestamp', chunk_time_interval => INTERVAL '1 day');
-SELECT create_hypertable('gas_metrics', 'timestamp', chunk_time_interval => INTERVAL '1 hour');
-SELECT create_hypertable('mempool_metrics', 'timestamp', chunk_time_interval => INTERVAL '1 hour');
-SELECT create_hypertable('network_health_scores', 'timestamp', chunk_time_interval => INTERVAL '1 hour');
+-- Convert tables to hypertables (only if tables exist)
+SELECT create_hypertable('block_metrics', 'block_timestamp',
+    chunk_time_interval => INTERVAL '1 day',
+    if_not_exists => TRUE
+);
+SELECT create_hypertable('gas_metrics', 'timestamp',
+    chunk_time_interval => INTERVAL '1 hour',
+    if_not_exists => TRUE
+);
+SELECT create_hypertable('mempool_metrics', 'timestamp',
+    chunk_time_interval => INTERVAL '1 hour',
+    if_not_exists => TRUE
+);
+SELECT create_hypertable('network_health_scores', 'timestamp',
+    chunk_time_interval => INTERVAL '1 hour',
+    if_not_exists => TRUE
+);
 
 -- Create continuous aggregates for common queries
 CREATE MATERIALIZED VIEW gas_metrics_5min

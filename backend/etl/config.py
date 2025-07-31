@@ -41,7 +41,7 @@ class Settings(BaseSettings):
 
     # Database
     database_url: str = Field(
-        default="postgresql://ethoscope:ethoscope_password@localhost:5432/ethoscope",
+        default="postgresql://ethoscope:ethoscope_password@localhost:5434/ethoscope",
         env="DATABASE_URL",
     )
 

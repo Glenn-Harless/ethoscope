@@ -8,10 +8,10 @@ services:
       POSTGRES_USER: ethoscope
       POSTGRES_PASSWORD: ethoscope_password
     ports:
-      - "5432:5432"
+      - "5434:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./scripts/setup_timescale.sql:/docker-entrypoint-initdb.d/10-setup-timescale.sql
+      - ./scripts/init_timescale.sql:/docker-entrypoint-initdb.d/10-init-timescale.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ethoscope"]
       interval: 10s
@@ -21,7 +21,7 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - "6379:6379"
+      - "6380:6379"
     volumes:
       - redis_data:/data
     healthcheck:
@@ -40,7 +40,7 @@ services:
       REDIS_URL: redis://redis:6379
       ALCHEMY_API_KEY: ${ALCHEMY_API_KEY}
     ports:
-      - "8000:8000"
+      - "8003:8000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -60,7 +60,7 @@ services:
       ALCHEMY_API_KEY: ${ALCHEMY_API_KEY}
       PYTHONPATH: /app
     ports:
-      - "8000:8000"
+      - "8003:8000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -79,7 +79,7 @@ services:
       PGADMIN_DEFAULT_EMAIL: admin@ethoscope.com
       PGADMIN_DEFAULT_PASSWORD: admin
     ports:
-      - "5050:80"
+      - "5051:80"
     depends_on:
       - postgres
     profiles: ["tools"]  # Only runs with --profile tools
