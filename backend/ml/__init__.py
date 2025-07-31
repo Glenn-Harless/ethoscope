@@ -1,1 +1,3 @@
-"""Machine learning models and analytics."""
+"""ML prediction module for Ethereum monitoring"""
+
+__version__ = "0.1.0"

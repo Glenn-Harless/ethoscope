@@ -160,6 +160,20 @@ class WebSocketManager:
         """Send metric update to subscribed clients"""
         await self.broadcast(metric_type, data)
 
+    async def broadcast_ml_alert(self, alert_data: dict):
+        """Broadcast ML alert to all connected clients"""
+        message = {
+            "type": "ml_alert",
+            "data": alert_data,
+            "timestamp": datetime.utcnow().isoformat(),
+        }
+
+        for connection in self.active_connections:
+            try:
+                await connection.send_json(message)
+            except Exception as e:
+                logger.error(f"Error sending alert: {e}")
+
     async def cleanup(self):
         """Cleanup resources on shutdown"""
         # Cancel background task
