@@ -12,7 +12,7 @@ from fastapi.websockets import WebSocketDisconnect
 from backend.api.middleware.auth import APIKeyAuth
 from backend.api.middleware.monitoring import MetricsMiddleware
 from backend.api.middleware.rate_limit import RateLimiter
-from backend.api.routers import admin, health, l2_comparison, metrics, mev
+from backend.api.routers import admin, health, l2_comparison, metrics, mev, ml
 from backend.api.websocket import WebSocketManager
 from backend.etl.pipeline import ETLPipeline
 from backend.models.database import SessionLocal
@@ -136,6 +136,12 @@ app.include_router(
     mev.router,
     prefix="/api/v1/mev",
     tags=["mev"],
+    dependencies=[Depends(verify_request)],
+)
+app.include_router(
+    ml.router,
+    prefix="/api/v1/ml",
+    tags=["ml"],
     dependencies=[Depends(verify_request)],
 )
 app.include_router(admin.router, prefix="/api/v1/admin", tags=["admin"])
