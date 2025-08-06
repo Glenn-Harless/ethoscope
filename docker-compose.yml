@@ -72,6 +72,25 @@ services:
       - ./scripts:/app/scripts
     profiles: ["dev"]  # Only runs with --profile dev
 
+  # Frontend Next.js application (development)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8003/api/v1
+      NEXT_PUBLIC_WS_URL: ws://localhost:8003
+      NODE_ENV: development
+    ports:
+      - "3001:3000"
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules  # Prevent node_modules from being overwritten
+      - /app/.next  # Prevent .next from being overwritten
+    profiles: ["frontend", "full"]  # Run with --profile frontend or --profile full
+
   # pgAdmin for database inspection
   pgadmin:
     image: dpage/pgadmin4

@@ -218,3 +218,26 @@ phase2-migrate:
 health-check-api:
 	@echo "$(BLUE)API Health Check:$(NC)"
 	@curl -s http://localhost:8000/api/v1/health/score | jq '.'
+
+# Frontend commands
+frontend-dev:
+	@echo "$(BLUE)Starting frontend development server...$(NC)"
+	docker-compose --profile frontend up frontend
+
+frontend-build:
+	@echo "$(BLUE)Building frontend for production...$(NC)"
+	docker-compose run --rm frontend npm run build
+
+frontend-shell:
+	@echo "$(BLUE)Opening frontend container shell...$(NC)"
+	docker-compose run --rm frontend sh
+
+full-stack:
+	@echo "$(BLUE)Starting full stack (backend + frontend)...$(NC)"
+	docker-compose up -d postgres redis backend
+	@sleep 3
+	docker-compose --profile frontend up frontend
+
+full-stack-docker:
+	@echo "$(BLUE)Starting full stack in Docker...$(NC)"
+	docker-compose --profile full up
