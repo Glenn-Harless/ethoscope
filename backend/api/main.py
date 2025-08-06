@@ -14,6 +14,7 @@ from backend.api.middleware.monitoring import MetricsMiddleware
 from backend.api.middleware.rate_limit import RateLimiter
 from backend.api.routers import admin, health, l2_comparison, metrics, mev, ml
 from backend.api.websocket import WebSocketManager
+from backend.app.api.v1.endpoints import l2_metrics, mev_metrics, network_metrics
 from backend.etl.pipeline import ETLPipeline
 from backend.models.database import SessionLocal
 from backend.models.metrics import NetworkHealthScore
@@ -128,14 +129,32 @@ app.include_router(
 )
 app.include_router(
     l2_comparison.router,
-    prefix="/api/v1/l2",
+    prefix="/api/v1/l2_old",
+    tags=["l2"],
+    dependencies=[Depends(verify_request)],
+)
+app.include_router(
+    l2_metrics.router,
+    prefix="/api/v1/metrics/l2",
     tags=["l2"],
     dependencies=[Depends(verify_request)],
 )
 app.include_router(
     mev.router,
-    prefix="/api/v1/mev",
+    prefix="/api/v1/mev_old",
     tags=["mev"],
+    dependencies=[Depends(verify_request)],
+)
+app.include_router(
+    mev_metrics.router,
+    prefix="/api/v1/metrics/mev",
+    tags=["mev"],
+    dependencies=[Depends(verify_request)],
+)
+app.include_router(
+    network_metrics.router,
+    prefix="/api/v1/metrics/network",
+    tags=["network"],
     dependencies=[Depends(verify_request)],
 )
 app.include_router(
