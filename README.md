@@ -1,5 +1,7 @@
 # Ethoscope - Ethereum Network Health Monitor
 
+> ⚠️ **IMPORTANT SECURITY NOTICE**: This repository contains sample credentials and API keys intended for local development only. **NEVER** use these default credentials in production environments. Always use secure, unique credentials and proper secret management practices.
+
 Ethoscope is a comprehensive monitoring and analytics platform for the Ethereum blockchain, providing real-time insights into network health, gas prices, MEV activity, and L2 migration patterns.
 
 ## Features
