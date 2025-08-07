@@ -13,22 +13,33 @@ class APIKeyAuth:
     """API Key authentication with tier support"""
 
     def __init__(self):
+        # IMPORTANT: The default secret key is for local development only!
+        # In production, always set API_SECRET_KEY environment variable with a secure, random value
         self.secret_key = os.getenv("API_SECRET_KEY", "your-secret-key")
         self.api_keys = {}  # In production, use database
 
-        # Sample API keys with tiers
+        # Sample API keys with tiers - FOR LOCAL DEVELOPMENT ONLY
         self._init_sample_keys()
 
     def _init_sample_keys(self):
-        """Initialize sample API keys (use database in production)"""
+        """
+        Initialize sample API keys for local development and testing.
+
+        WARNING: These are demo keys for local development only!
+        In production, implement proper API key management with:
+        - Database storage
+        - Secure key generation
+        - Key rotation policies
+        - Rate limiting per key
+        """
         self.api_keys = {
-            "demo-key-123": {
+            "demo-key-123": {  # Sample key for testing basic read access
                 "tier": "default",
                 "name": "Demo User",
                 "created": datetime.utcnow(),
                 "permissions": ["read"],
             },
-            "premium-key-456": {
+            "premium-key-456": {  # Sample key for testing premium features
                 "tier": "premium",
                 "name": "Premium User",
                 "created": datetime.utcnow(),
